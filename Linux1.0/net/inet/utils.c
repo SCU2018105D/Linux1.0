@@ -42,8 +42,8 @@
 
 
 /* Display an IP address in readable format. */
-/* 将ip地址转换成字符串形式
-  * 该ip地址是用一个长整型的数来表示的
+/* 灏唅p鍦板潃杞崲鎴愬瓧绗︿覆褰㈠紡
+  * 璇p鍦板潃鏄敤涓�涓暱鏁村瀷鐨勬暟鏉ヨ〃绀虹殑
   */
 char *in_ntoa(unsigned long in)
 {
@@ -103,7 +103,7 @@ dprintf(int level, char *fmt, ...)
 }
 
 
-/* 设置ip层调试的级别 */
+/* 璁剧疆ip灞傝皟璇曠殑绾у埆 */
 int
 dbg_ioctl(void *arg, int level)
 {
@@ -111,6 +111,7 @@ dbg_ioctl(void *arg, int level)
   int err;
   
   if (!suser()) return(-EPERM);
+  // 楠岃瘉鏄惁灞炰簬鍐呮牳绌洪棿
   err=verify_area(VERIFY_READ, (void *)arg, sizeof(int));
   if(err)
   	return err;
