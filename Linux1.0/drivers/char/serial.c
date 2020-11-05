@@ -852,6 +852,7 @@ static int startup(struct async_struct * info, int get_irq)
  * This routine will shutdown a serial port; interrupts are disabled, and
  * DTR is dropped if the hangup on close termio flag is on.
  */
+/* 关闭服务端口 */
 static void shutdown(struct async_struct * info, int do_free_irq)
 {
 	unsigned long flags;

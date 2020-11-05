@@ -8,6 +8,12 @@
  *
  * Author:	Fred N. van Kempen, <waltje@uwalt.nl.mugnet.org>
  */
+
+/*
+
+ç½‘å¡è®¾å¤‡é©±åŠ¨æ¥å£
+
+*/
 #include <asm/segment.h>
 #include <asm/system.h>
 #include <linux/types.h>
@@ -44,10 +50,12 @@ extern struct ddi_proto		protocols[];	/* network protocols	*/
 struct ddi_device *
 ddi_map(const char *id)
 {
+  // è®¾å¤‡æŒ‡é’ˆ
   register struct ddi_device *dev;
 
   PRINTK (("DDI: MAP: looking for \"%s\": ", id));
   dev = devices;
+  // æŸ¥è¯¢è®¾å¤‡åç§°
   while (dev->title != NULL) {
 	if (strncmp(dev->name, id, DDI_MAXNAME) == 0) {
 		PRINTK (("OK at 0x%X\n", dev));
@@ -65,7 +73,7 @@ ddi_map(const char *id)
  * system startup.  Its purpose is to walk trough the "devices"
  * table (defined above), and to call all moduled defined in it.
  */
-/* ËùÓĞµÄÍøÂçÉè±¸¶¼ÔÚÕâÀïÍ¨¹ıÉè±¸µÄĞÎÊ½À´³õÊ¼»¯ */
+/* è¿›è¡Œè®¾å¤‡åˆå§‹åŒ– */
 void ddi_init(void)
 {
   struct ddi_proto *pro;
@@ -75,7 +83,7 @@ void ddi_init(void)
 
   /* First off, kick all configured protocols. */
   pro = protocols;
-  /* ËùÓĞÉè±¸Ğ­ÒéµÄ³õÊ¼»¯ */
+  /* æ£€æŸ¥åå­—æ˜¯å¦ä¸ºç©º */
   while (pro->name != NULL) {
 	(*pro->init)(pro);
 	pro++;
@@ -84,8 +92,9 @@ void ddi_init(void)
   /* Done.  Now kick all configured device drivers. */
   dev = devices;
   while (dev->title != NULL) {
-	(*dev->init)(dev);
-	dev++;
+    // è°ƒç”¨è®¾å¤‡åˆå§‹åŒ–å‡½æ•°
+    (*dev->init)(dev);
+    dev++;
   }
 
   /* We're all done... */

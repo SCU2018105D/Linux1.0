@@ -36,8 +36,8 @@
 #include "inet/ax25call.h"
 #endif
 
-/* 设备驱动接口协议数组，其中包括对不同协议设备的初始化
-  * 如常用的UNIX、INET协议 
+/* 璁惧椹卞姩鎺ュ彛鍗忚鏁扮粍锛屽叾涓寘鎷涓嶅悓鍗忚璁惧鐨勫垵濮嬪寲
+  * 濡傚父鐢ㄧ殑UNIX銆両NET鍗忚 
   */
 struct ddi_proto protocols[] = {
 #ifdef	CONFIG_UNIX
@@ -69,7 +69,7 @@ struct ddi_proto protocols[] = {
 /*#include "drv/dp8390/dp8390.h"	Donald Becker's DP8390 kit	*/
 /*#inclde "drv/slip/slip.h"		Laurence Culhane's SLIP kit	*/
 
-
+//鑾峰彇褰撳墠缃戝崱鐨刣evices
 struct ddi_device devices[] = {
 #if CONF_WE8003
   { "WD80x3[EBT]",

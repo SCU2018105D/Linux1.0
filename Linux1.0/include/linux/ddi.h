@@ -36,8 +36,8 @@ struct ddconf {
 /* The DDI device control block. */
 struct ddi_device {
   char		*title;			/* title of the driver		*/
-  char		name[DDI_MAXNAME];	/* unit name of the I/O driver	*/
-  short int	unit;			/* unit number of this driver	*/
+  char		name[DDI_MAXNAME];	/* unit name of the I/O driver	*/ /* 驱动名称 */
+  short int	unit;			/* unit number of this driver	*/ /* 设备编号 */
   short int	nunits;			/* number of units in driver	*/
   int		(*init)(struct ddi_device *);	/* initialization func		*/
   int		(*handler)(int, ...);	/* command handler		*/
