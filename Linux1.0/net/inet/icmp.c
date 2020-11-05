@@ -42,214 +42,213 @@
 #include <asm/system.h>
 #include <asm/segment.h>
 
-
-#define min(a,b)	((a)<(b)?(a):(b))
-
+#define min(a, b) ((a) < (b) ? (a) : (b))
 
 /* An array of errno for error messages from dest unreach. */
 struct icmp_err icmp_err_convert[] = {
-  { ENETUNREACH,	1 },	/*	ICMP_NET_UNREACH	*/
-  { EHOSTUNREACH,	1 },	/*	ICMP_HOST_UNREACH	*/
-  { ENOPROTOOPT,	1 },	/*	ICMP_PROT_UNREACH	*/
-  { ECONNREFUSED,	1 },	/*	ICMP_PORT_UNREACH	*/
-  { EOPNOTSUPP,		0 },	/*	ICMP_FRAG_NEEDED	*/
-  { EOPNOTSUPP,		0 },	/*	ICMP_SR_FAILED		*/
-  { ENETUNREACH,	1 },	/* 	ICMP_NET_UNKNOWN	*/
-  { EHOSTDOWN,		1 },	/*	ICMP_HOST_UNKNOWN	*/
-  { ENONET,		1 },	/*	ICMP_HOST_ISOLATED	*/
-  { ENETUNREACH,	1 },	/*	ICMP_NET_ANO		*/
-  { EHOSTUNREACH,	1 },	/*	ICMP_HOST_ANO		*/
-  { EOPNOTSUPP,		0 },	/*	ICMP_NET_UNR_TOS	*/
-  { EOPNOTSUPP,		0 }	/*	ICMP_HOST_UNR_TOS	*/
+	{ENETUNREACH, 1},  /*	ICMP_NET_UNREACH	*/
+	{EHOSTUNREACH, 1}, /*	ICMP_HOST_UNREACH	*/
+	{ENOPROTOOPT, 1},  /*	ICMP_PROT_UNREACH	*/
+	{ECONNREFUSED, 1}, /*	ICMP_PORT_UNREACH	*/
+	{EOPNOTSUPP, 0},   /*	ICMP_FRAG_NEEDED	*/
+	{EOPNOTSUPP, 0},   /*	ICMP_SR_FAILED		*/
+	{ENETUNREACH, 1},  /* 	ICMP_NET_UNKNOWN	*/
+	{EHOSTDOWN, 1},	   /*	ICMP_HOST_UNKNOWN	*/
+	{ENONET, 1},	   /*	ICMP_HOST_ISOLATED	*/
+	{ENETUNREACH, 1},  /*	ICMP_NET_ANO		*/
+	{EHOSTUNREACH, 1}, /*	ICMP_HOST_ANO		*/
+	{EOPNOTSUPP, 0},   /*	ICMP_NET_UNR_TOS	*/
+	{EOPNOTSUPP, 0}	   /*	ICMP_HOST_UNR_TOS	*/
 };
-
 
 /* Display the contents of an ICMP header. */
 static void
 print_icmp(struct icmphdr *icmph)
 {
-  if (inet_debug != DBG_ICMP) return;
+	if (inet_debug != DBG_ICMP)
+		return;
 
-  printk("ICMP: type = %d, code = %d, checksum = %X\n",
-			icmph->type, icmph->code, icmph->checksum);
-  printk("      gateway = %s\n", in_ntoa(icmph->un.gateway));
+	printk("ICMP: type = %d, code = %d, checksum = %X\n",
+		   icmph->type, icmph->code, icmph->checksum);
+	printk("      gateway = %s\n", in_ntoa(icmph->un.gateway));
 }
-
 
 /* Send an ICMP message. */
-/* ¸Ãº¯Êý±»µ÷ÓÃ·¢ËÍÒ»¸öICMP´íÎóÍ¨±¨Êý¾Ý°ü£¬ICMP´íÎóÍ¨±¨Êý¾Ý°ü
- * Ò»°ãÔÚ½ÓÊÕµ½Ô¶¶ËÒ»¸ö²»ºÏ·¨µÄÊý¾Ý°ü²úÉúµÄ£¬ÓÃÓÚÍ¨ÖªÔ¶¶Ë·¢Éú´íÎóµÄÔ­Òò
- * 1¡µ Ò»¸ö ICMP ´íÎóÍ¨±¨Êý¾Ý°ü¡£
- * 2¡µ Êý¾Ý°üÔ¶¶ËµØÖ·ÊÇÒ»¸ö¹ã²¥µØÖ·»òÕßÊÇÒ»¸ö¶à²¥µØÖ·¡£
- * 3¡µ Á´Â·¹ã²¥Êý¾Ý°ü£¨MAC Ô¶¶ËµØÖ·ÉèÖÃÎªÈ« 1£© ¡£
- * 4¡µ ·ÖÆ¬Êý¾Ý°üÖÐ·ÇµÚÒ»¸öÊý¾Ý°ü£¨»»¾ä»°Ëµ£¬Ö»¶ÔËùÓÐ·ÖÆ¬ÖÐµÚÒ»¸ö·ÖÆ¬²úÉú ICMP ´íÎó
- * Í¨±¨Êý¾Ý°ü£¬Ô­ÒòºÜ¼òµ¥£¬Ö»ÓÐµÚÒ»¸ö·ÖÆ¬²Å°üº¬ÓÐ´«Êä²ãÐ­ÒéÍ·²¿£© ¡£
- * 5¡µ Êý¾Ý°üÔ´¶ËµØÖ··Çµ¥²¥µØÖ·£¬¼´È« 0 µØÖ·£¬»Ø»·µØÖ·£¬¶à²¥»ò¹ã²¥µØÖ·¡£
- * Âú×ãÒÔÉÏ 5 ¸öÌõ¼þÖÐÖ®Ò»£¬¼´²»¿É²úÉúÒ»¸ö ICMP ´íÎóÍ¨±¨Êý¾Ý°ü¡£
- * icmp_send º¯ÊýÊµÏÖ´úÂëËäÈ»½Ï³¤£¬µ«ÊµÏÖË¼Ïë·Ç³£¼òµ¥£¬Ê×ÏÈÅÐ¶ÏÒýÆð´íÎóµÄÊý¾Ý°üÊÇ·ñ
- * Âú×ãÒÔÉÏ 5 ÖÖÌõ¼þÖ®Ò»£¬Èç¹ûÂú×ã£¬ÔòÖ±½Ó·µ»Øµ÷ÓÃÕâ£¬²»²úÉú ICMP ´íÎóÍ¨±¨Êý¾Ý°ü£¬·ñ
- * Ôò¸üÐÂ±¾µØ ICMP Í³¼ÆÐÅÏ¢ºó£¬¹¹½¨Ò»¸ö ICMP ´íÎóÍ¨±¨Êý¾Ý°ü²¢Ö±½Óµ÷ÓÃ ip_queue_xmit
- * º¯Êý·¢ËÍ¸ö IP Ä£¿é½øÐÐ´¦Àí´Ó¶ø½«Õâ¸ö ICMP ´íÎóÍ¨±¨Êý¾Ý°ü·¢ËÍ¸øÒýÆð¸Ã´íÎóµÄÔ­Êý¾Ý
- * °üµÄ·¢ËÍ¶Ë¡£
+/* è¯¥å‡½æ•°è¢«è°ƒç”¨å‘é€ä¸€ä¸ªICMPé”™è¯¯é€šæŠ¥æ•°æ®åŒ…ï¼ŒICMPé”™è¯¯é€šæŠ¥æ•°æ®åŒ…
+ * ä¸€èˆ¬åœ¨æŽ¥æ”¶åˆ°è¿œç«¯ä¸€ä¸ªä¸åˆæ³•çš„æ•°æ®åŒ…äº§ç”Ÿçš„ï¼Œç”¨äºŽé€šçŸ¥è¿œç«¯å‘ç”Ÿé”™è¯¯çš„åŽŸå› 
+ * 1ã€‰ ä¸€ä¸ª ICMP é”™è¯¯é€šæŠ¥æ•°æ®åŒ…ã€‚
+ * 2ã€‰ æ•°æ®åŒ…è¿œç«¯åœ°å€æ˜¯ä¸€ä¸ªå¹¿æ’­åœ°å€æˆ–è€…æ˜¯ä¸€ä¸ªå¤šæ’­åœ°å€ã€‚
+ * 3ã€‰ é“¾è·¯å¹¿æ’­æ•°æ®åŒ…ï¼ˆMAC è¿œç«¯åœ°å€è®¾ç½®ä¸ºå…¨ 1ï¼‰ ã€‚
+ * 4ã€‰ åˆ†ç‰‡æ•°æ®åŒ…ä¸­éžç¬¬ä¸€ä¸ªæ•°æ®åŒ…ï¼ˆæ¢å¥è¯è¯´ï¼Œåªå¯¹æ‰€æœ‰åˆ†ç‰‡ä¸­ç¬¬ä¸€ä¸ªåˆ†ç‰‡äº§ç”Ÿ ICMP é”™è¯¯
+ * é€šæŠ¥æ•°æ®åŒ…ï¼ŒåŽŸå› å¾ˆç®€å•ï¼Œåªæœ‰ç¬¬ä¸€ä¸ªåˆ†ç‰‡æ‰åŒ…å«æœ‰ä¼ è¾“å±‚åè®®å¤´éƒ¨ï¼‰ ã€‚
+ * 5ã€‰ æ•°æ®åŒ…æºç«¯åœ°å€éžå•æ’­åœ°å€ï¼Œå³å…¨ 0 åœ°å€ï¼Œå›žçŽ¯åœ°å€ï¼Œå¤šæ’­æˆ–å¹¿æ’­åœ°å€ã€‚
+ * æ»¡è¶³ä»¥ä¸Š 5 ä¸ªæ¡ä»¶ä¸­ä¹‹ä¸€ï¼Œå³ä¸å¯äº§ç”Ÿä¸€ä¸ª ICMP é”™è¯¯é€šæŠ¥æ•°æ®åŒ…ã€‚
+ * icmp_send å‡½æ•°å®žçŽ°ä»£ç è™½ç„¶è¾ƒé•¿ï¼Œä½†å®žçŽ°æ€æƒ³éžå¸¸ç®€å•ï¼Œé¦–å…ˆåˆ¤æ–­å¼•èµ·é”™è¯¯çš„æ•°æ®åŒ…æ˜¯å¦
+ * æ»¡è¶³ä»¥ä¸Š 5 ç§æ¡ä»¶ä¹‹ä¸€ï¼Œå¦‚æžœæ»¡è¶³ï¼Œåˆ™ç›´æŽ¥è¿”å›žè°ƒç”¨è¿™ï¼Œä¸äº§ç”Ÿ ICMP é”™è¯¯é€šæŠ¥æ•°æ®åŒ…ï¼Œå¦
+ * åˆ™æ›´æ–°æœ¬åœ° ICMP ç»Ÿè®¡ä¿¡æ¯åŽï¼Œæž„å»ºä¸€ä¸ª ICMP é”™è¯¯é€šæŠ¥æ•°æ®åŒ…å¹¶ç›´æŽ¥è°ƒç”¨ ip_queue_xmit
+ * å‡½æ•°å‘é€ä¸ª IP æ¨¡å—è¿›è¡Œå¤„ç†ä»Žè€Œå°†è¿™ä¸ª ICMP é”™è¯¯é€šæŠ¥æ•°æ®åŒ…å‘é€ç»™å¼•èµ·è¯¥é”™è¯¯çš„åŽŸæ•°æ®
+ * åŒ…çš„å‘é€ç«¯ã€‚
  */
-void
-icmp_send(struct sk_buff *skb_in, int type, int code, struct device *dev)
+void icmp_send(struct sk_buff *skb_in, int type, int code, struct device *dev)
 {
-  struct sk_buff *skb;
-  struct iphdr *iph;
-  int offset;
-  struct icmphdr *icmph;
-  int len;
+	struct sk_buff *skb;
+	struct iphdr *iph;
+	int offset;
+	struct icmphdr *icmph;
+	int len;
 
-  DPRINTF((DBG_ICMP, "icmp_send(skb_in = %X, type = %d, code = %d, dev=%X)\n",
-	   					skb_in, type, code, dev));
+	DPRINTF((DBG_ICMP, "icmp_send(skb_in = %X, type = %d, code = %d, dev=%X)\n",
+			 skb_in, type, code, dev));
 
-  /* Get some memory for the reply. */
-  len = sizeof(struct sk_buff) + dev->hard_header_len +
-	sizeof(struct iphdr) + sizeof(struct icmphdr) +
-	sizeof(struct iphdr) + 8;	/* amount of header to return */
-	   
-  skb = (struct sk_buff *) alloc_skb(len, GFP_ATOMIC);
-  if (skb == NULL) 
-  	return;
+	/* Get some memory for the reply. */
+	len = sizeof(struct sk_buff) + dev->hard_header_len +
+		  sizeof(struct iphdr) + sizeof(struct icmphdr) +
+		  sizeof(struct iphdr) + 8; /* amount of header to return */
 
-  skb->sk = NULL;
-  skb->mem_addr = skb;
-  skb->mem_len = len;
-  len -= sizeof(struct sk_buff);
+	skb = (struct sk_buff *)alloc_skb(len, GFP_ATOMIC);
+	if (skb == NULL)
+		return;
 
-  /* Find the IP header. */
-  iph = (struct iphdr *) (skb_in->data + dev->hard_header_len);
-
-  /* Build Layer 2-3 headers for message back to source. */
-  offset = ip_build_header(skb, dev->pa_addr, iph->saddr,
-			   &dev, IPPROTO_ICMP, NULL, len, skb_in->ip_hdr->tos,255);
-  if (offset < 0) {
 	skb->sk = NULL;
-	kfree_skb(skb, FREE_READ);
-	return;
-  }
+	skb->mem_addr = skb;
+	skb->mem_len = len;
+	len -= sizeof(struct sk_buff);
 
-  /* Re-adjust length according to actual IP header size. */
-  skb->len = offset + sizeof(struct icmphdr) + sizeof(struct iphdr) + 8;
-  icmph = (struct icmphdr *) (skb->data + offset);
-  icmph->type = type;
-  icmph->code = code;
-  icmph->checksum = 0;
-  icmph->un.gateway = 0;
-  memcpy(icmph + 1, iph, sizeof(struct iphdr) + 8);
+	/* Find the IP header. */
+	iph = (struct iphdr *)(skb_in->data + dev->hard_header_len);
 
-  icmph->checksum = ip_compute_csum((unsigned char *)icmph,
-                         sizeof(struct icmphdr) + sizeof(struct iphdr) + 8);
+	/* Build Layer 2-3 headers for message back to source. */
+	offset = ip_build_header(skb, dev->pa_addr, iph->saddr,
+							 &dev, IPPROTO_ICMP, NULL, len, skb_in->ip_hdr->tos, 255);
+	if (offset < 0)
+	{
+		skb->sk = NULL;
+		kfree_skb(skb, FREE_READ);
+		return;
+	}
 
-  DPRINTF((DBG_ICMP, ">>\n"));
-  print_icmp(icmph);
+	/* Re-adjust length according to actual IP header size. */
+	skb->len = offset + sizeof(struct icmphdr) + sizeof(struct iphdr) + 8;
+	icmph = (struct icmphdr *)(skb->data + offset);
+	icmph->type = type;
+	icmph->code = code;
+	icmph->checksum = 0;
+	icmph->un.gateway = 0;
+	memcpy(icmph + 1, iph, sizeof(struct iphdr) + 8);
 
-  /* Send it and free it. */
-  ip_queue_xmit(NULL, dev, skb, 1);
+	icmph->checksum = ip_compute_csum((unsigned char *)icmph,
+									  sizeof(struct icmphdr) + sizeof(struct iphdr) + 8);
+
+	DPRINTF((DBG_ICMP, ">>\n"));
+	print_icmp(icmph);
+
+	/* Send it and free it. */
+	ip_queue_xmit(NULL, dev, skb, 1);
 }
 
-
 /* Handle ICMP_UNREACH and ICMP_QUENCH. */
-/* icmp_unreach º¯Êý´¦ÀíµÄ ICMP ´íÎóÀàÐÍ±È½Ï¹ã£¬Õâµã¿ÉÒÔ´ÓÏÂÎÄÖÐ½éÉÜµÄ icmp_rcv ×ÜÈë
- * ¿Úº¯Êý¿´³ö¡£´Ë´¦ÎÒÃÇ¾ÍÊÂÂÛÊÂ£¬µ¥·½Ãæ½øÐÐ¸Ãº¯ÊýµÄ·ÖÎö¡£º¯ÊýÊµÏÖË¼Ïë½ÏÎª¼òµ¥£¬¶ÔÏà
- * ¹Ø´íÎó´òÓ¡´íÎóÐÅÏ¢ºó£¬µ÷ÓÃ´«Êä²ãÐ­Òé´íÎó´¦Àíº¯Êý½øÐÐ´¦Àí£¨tcp_err, udp_err£© ¡£×¢Òâ
- * 242 ÐÐ´úÂë err ±äÁ¿±»³õÊ¼»¯Îª ICMP ÀàÐÍºÍ´úÂëÖµ¡£×îµÍ 8bit Îª´úÂë£¨code£©Öµ£¬´ÎµÍ 8bit
- * ÎªÀàÐÍ£¨type£©Öµ¡£243 ÐÐ´úÂë³õÊ¼»¯ iph ±äÁ¿Ö¸ÏòÔ­Êý¾Ý°üÖÐ IP Ê×²¿ÒÔ¼°´«Êä²ã 8 ×Ö½ÚÊý
- * ¾Ý£¬´Ó¶ø´«Êä²ã´íÎó´¦Àíº¯Êý¿ÉÒÔÓÉ´Ë»ñÖªÉÏ²ã¶ÔÓ¦Ó¦ÓÃ½ø³Ì¡£269 ÐÐ´úÂë¼ÆËã´«Êä²ãÐ­Òé
- * ÔÚ inet_protos Êý×éÖÐµÄÎ»ÖÃ¡£inet_protos Ò»¸öÔªËØÀàÐÍÎª inet_protocol ½á¹¹µÄÊý×é£¬Êý×éÖÐ
- * Ã¿¸öÔªËØ¶ÔÓ¦Ò»¸ö´«Êä²ãÐ­Òé£¬Ð­ÒéÔÚÊý×éÖÐµÄÎ»ÖÃÓÉÐ­Òé±àºÅË÷Òý£¬Èç TCP Ð­Òé¶ÔÓ¦Ë÷
- * ÒýºÅÎª 6£¬UDP Îª 17¡£274-287 ÐÐ´úÂëÍê³É¶Ô´«Êä²ãÐ­ÒéµÄ±éÀú£¬µ÷ÓÃÐ­Òé¶ÔÓ¦´íÎó´¦Àíº¯
- * Êý½øÐÐ·µ»Ø´íÎóµÄ´¦Àí¡£ ×¢Òâ inet_protos Êý×éÖÐÃ¿¸öÔªËØ¶ÔÓ¦Ò»¸öÐ­Òé£¬ ËùÒÔ 274 ÐÐÔÚÒ»´Î
- * Ñ­»·ºó»áÍË³ö£¬µ«ÕâÖÖ±àÂë·½Ê½Ìá¸ßÁË³ÌÐòµÄ¿ÉÀ©Õ¹ÐÔ¡£ 
- * Internet²»¿É´ï´íÎó´¦ÀíÔÚ¼ÌÐøµ÷ÓÃ´«Êä²ãµÄ´íÎó»Øµ÷¾ä±ú£¬err_handler 
+/* icmp_unreach å‡½æ•°å¤„ç†çš„ ICMP é”™è¯¯ç±»åž‹æ¯”è¾ƒå¹¿ï¼Œè¿™ç‚¹å¯ä»¥ä»Žä¸‹æ–‡ä¸­ä»‹ç»çš„ icmp_rcv æ€»å…¥
+ * å£å‡½æ•°çœ‹å‡ºã€‚æ­¤å¤„æˆ‘ä»¬å°±äº‹è®ºäº‹ï¼Œå•æ–¹é¢è¿›è¡Œè¯¥å‡½æ•°çš„åˆ†æžã€‚å‡½æ•°å®žçŽ°æ€æƒ³è¾ƒä¸ºç®€å•ï¼Œå¯¹ç›¸
+ * å…³é”™è¯¯æ‰“å°é”™è¯¯ä¿¡æ¯åŽï¼Œè°ƒç”¨ä¼ è¾“å±‚åè®®é”™è¯¯å¤„ç†å‡½æ•°è¿›è¡Œå¤„ç†ï¼ˆtcp_err, udp_errï¼‰ ã€‚æ³¨æ„
+ * 242 è¡Œä»£ç  err å˜é‡è¢«åˆå§‹åŒ–ä¸º ICMP ç±»åž‹å’Œä»£ç å€¼ã€‚æœ€ä½Ž 8bit ä¸ºä»£ç ï¼ˆcodeï¼‰å€¼ï¼Œæ¬¡ä½Ž 8bit
+ * ä¸ºç±»åž‹ï¼ˆtypeï¼‰å€¼ã€‚243 è¡Œä»£ç åˆå§‹åŒ– iph å˜é‡æŒ‡å‘åŽŸæ•°æ®åŒ…ä¸­ IP é¦–éƒ¨ä»¥åŠä¼ è¾“å±‚ 8 å­—èŠ‚æ•°
+ * æ®ï¼Œä»Žè€Œä¼ è¾“å±‚é”™è¯¯å¤„ç†å‡½æ•°å¯ä»¥ç”±æ­¤èŽ·çŸ¥ä¸Šå±‚å¯¹åº”åº”ç”¨è¿›ç¨‹ã€‚269 è¡Œä»£ç è®¡ç®—ä¼ è¾“å±‚åè®®
+ * åœ¨ inet_protos æ•°ç»„ä¸­çš„ä½ç½®ã€‚inet_protos ä¸€ä¸ªå…ƒç´ ç±»åž‹ä¸º inet_protocol ç»“æž„çš„æ•°ç»„ï¼Œæ•°ç»„ä¸­
+ * æ¯ä¸ªå…ƒç´ å¯¹åº”ä¸€ä¸ªä¼ è¾“å±‚åè®®ï¼Œåè®®åœ¨æ•°ç»„ä¸­çš„ä½ç½®ç”±åè®®ç¼–å·ç´¢å¼•ï¼Œå¦‚ TCP åè®®å¯¹åº”ç´¢
+ * å¼•å·ä¸º 6ï¼ŒUDP ä¸º 17ã€‚274-287 è¡Œä»£ç å®Œæˆå¯¹ä¼ è¾“å±‚åè®®çš„éåŽ†ï¼Œè°ƒç”¨åè®®å¯¹åº”é”™è¯¯å¤„ç†å‡½
+ * æ•°è¿›è¡Œè¿”å›žé”™è¯¯çš„å¤„ç†ã€‚ æ³¨æ„ inet_protos æ•°ç»„ä¸­æ¯ä¸ªå…ƒç´ å¯¹åº”ä¸€ä¸ªåè®®ï¼Œ æ‰€ä»¥ 274 è¡Œåœ¨ä¸€æ¬¡
+ * å¾ªçŽ¯åŽä¼šé€€å‡ºï¼Œä½†è¿™ç§ç¼–ç æ–¹å¼æé«˜äº†ç¨‹åºçš„å¯æ‰©å±•æ€§ã€‚ 
+ * Internetä¸å¯è¾¾é”™è¯¯å¤„ç†åœ¨ç»§ç»­è°ƒç”¨ä¼ è¾“å±‚çš„é”™è¯¯å›žè°ƒå¥æŸ„ï¼Œerr_handler 
  */
 static void
 icmp_unreach(struct icmphdr *icmph, struct sk_buff *skb)
 {
-  struct inet_protocol *ipprot;
-  struct iphdr *iph;
-  unsigned char hash;
-  int err;
+	struct inet_protocol *ipprot;
+	struct iphdr *iph;
+	unsigned char hash;
+	int err;
 
-  err = (icmph->type << 8) | icmph->code;
-  iph = (struct iphdr *) (icmph + 1);
-  switch(icmph->code & 7) {
+	err = (icmph->type << 8) | icmph->code;
+	iph = (struct iphdr *)(icmph + 1);
+	switch (icmph->code & 7)
+	{
 	case ICMP_NET_UNREACH:
 		DPRINTF((DBG_ICMP, "ICMP: %s: network unreachable.\n",
-							in_ntoa(iph->daddr)));
+				 in_ntoa(iph->daddr)));
 		break;
 	case ICMP_HOST_UNREACH:
 		DPRINTF((DBG_ICMP, "ICMP: %s: host unreachable.\n",
-						in_ntoa(iph->daddr)));
+				 in_ntoa(iph->daddr)));
 		break;
 	case ICMP_PROT_UNREACH:
 		printk("ICMP: %s:%d: protocol unreachable.\n",
-			in_ntoa(iph->daddr), ntohs(iph->protocol));
+			   in_ntoa(iph->daddr), ntohs(iph->protocol));
 		break;
 	case ICMP_PORT_UNREACH:
 		DPRINTF((DBG_ICMP, "ICMP: %s:%d: port unreachable.\n",
-			in_ntoa(iph->daddr), -1 /* FIXME: ntohs(iph->port) */));
+				 in_ntoa(iph->daddr), -1 /* FIXME: ntohs(iph->port) */));
 		break;
 	case ICMP_FRAG_NEEDED:
 		printk("ICMP: %s: fragmentation needed and DF set.\n",
-							in_ntoa(iph->daddr));
+			   in_ntoa(iph->daddr));
 		break;
 	case ICMP_SR_FAILED:
 		printk("ICMP: %s: Source Route Failed.\n", in_ntoa(iph->daddr));
 		break;
 	default:
 		DPRINTF((DBG_ICMP, "ICMP: Unreachable: CODE=%d from %s\n",
-		    		(icmph->code & 7), in_ntoa(iph->daddr)));
+				 (icmph->code & 7), in_ntoa(iph->daddr)));
 		break;
-  }
-
-  /* Get the protocol(s). */
-  hash = iph->protocol & (MAX_INET_PROTOS -1);
-
-  /* This can change while we are doing it. */
-  ipprot = (struct inet_protocol *) inet_protos[hash];
-  while(ipprot != NULL) {
-	struct inet_protocol *nextip;
-
-	nextip = (struct inet_protocol *) ipprot->next;
-
-	/* Pass it off to everyone who wants it. */
-	if (iph->protocol == ipprot->protocol && ipprot->err_handler) {
-        /* µ÷ÓÃÉÏ²ãÐ­ÒéµÄ´íÎó´¦Àíº¯Êý */
-		ipprot->err_handler(err, (unsigned char *)(icmph + 1),
-				    iph->daddr, iph->saddr, ipprot);
 	}
 
-	ipprot = nextip;
-  }
-  skb->sk = NULL;
-  kfree_skb(skb, FREE_READ);
+	/* Get the protocol(s). */
+	hash = iph->protocol & (MAX_INET_PROTOS - 1);
+
+	/* This can change while we are doing it. */
+	ipprot = (struct inet_protocol *)inet_protos[hash];
+	while (ipprot != NULL)
+	{
+		struct inet_protocol *nextip;
+
+		nextip = (struct inet_protocol *)ipprot->next;
+
+		/* Pass it off to everyone who wants it. */
+		if (iph->protocol == ipprot->protocol && ipprot->err_handler)
+		{
+			/* è°ƒç”¨ä¸Šå±‚åè®®çš„é”™è¯¯å¤„ç†å‡½æ•° */
+			ipprot->err_handler(err, (unsigned char *)(icmph + 1),
+								iph->daddr, iph->saddr, ipprot);
+		}
+
+		ipprot = nextip;
+	}
+	skb->sk = NULL;
+	kfree_skb(skb, FREE_READ);
 }
 
-
 /* Handle ICMP_REDIRECT. */
-/* Â·ÓÉÆ÷ÎªÌØ¶¨µÄÄ¿µÄÖ÷»ú·¢ËÍÖØ¶¨ÏòÏûÏ¢½«
- * Ö÷»úÖØ¶¨Ïòµ½Ò»¸ö¸üÓÅµÄÂ·ÓÉÆ÷»òÕß¸æËßÖ÷»úÄ¿µÄÖ÷»úÊµ¼ÊÉÏÊÇÔÚÍ¬Ò»Á´Â·ÉÏµÄÁÚ¾Ó½Úµã¡£ 
+/* è·¯ç”±å™¨ä¸ºç‰¹å®šçš„ç›®çš„ä¸»æœºå‘é€é‡å®šå‘æ¶ˆæ¯å°†
+ * ä¸»æœºé‡å®šå‘åˆ°ä¸€ä¸ªæ›´ä¼˜çš„è·¯ç”±å™¨æˆ–è€…å‘Šè¯‰ä¸»æœºç›®çš„ä¸»æœºå®žé™…ä¸Šæ˜¯åœ¨åŒä¸€é“¾è·¯ä¸Šçš„é‚»å±…èŠ‚ç‚¹ã€‚ 
  */
 static void
 icmp_redirect(struct icmphdr *icmph, struct sk_buff *skb, struct device *dev)
 {
-  struct iphdr *iph;
-  unsigned long ip;
+	struct iphdr *iph;
+	unsigned long ip;
 
-  iph = (struct iphdr *) (icmph + 1);
-  ip = iph->daddr;
-  switch(icmph->code & 7) {
+	iph = (struct iphdr *)(icmph + 1);
+	ip = iph->daddr;
+	switch (icmph->code & 7)
+	{
 	case ICMP_REDIR_NET:
 #ifdef not_a_good_idea
 		rt_add((RTF_DYNAMIC | RTF_MODIFIED | RTF_GATEWAY),
-			ip, 0, icmph->un.gateway, dev);
+			   ip, 0, icmph->un.gateway, dev);
 		break;
 #endif
 	case ICMP_REDIR_HOST:
 		rt_add((RTF_DYNAMIC | RTF_MODIFIED | RTF_HOST | RTF_GATEWAY),
-			ip, 0, icmph->un.gateway, dev);
+			   ip, 0, icmph->un.gateway, dev);
 		break;
 	case ICMP_REDIR_NETTOS:
 	case ICMP_REDIR_HOSTTOS:
@@ -257,226 +256,227 @@ icmp_redirect(struct icmphdr *icmph, struct sk_buff *skb, struct device *dev)
 		break;
 	default:
 		DPRINTF((DBG_ICMP, "ICMP: Unreach: CODE=%d\n",
-						(icmph->code & 7)));
+				 (icmph->code & 7)));
 		break;
-  }
-  skb->sk = NULL;
-  kfree_skb(skb, FREE_READ);
+	}
+	skb->sk = NULL;
+	kfree_skb(skb, FREE_READ);
 }
 
-
 /* Handle ICMP_ECHO ("ping") requests. */
-/* ±¾º¯ÊýÊµÏÖ¹¦ÄÜµ¥Ò»£¬¼´»Ø¸´Ò»¸ö Echo Ó¦´ðÊý¾Ý°ü
+/* æœ¬å‡½æ•°å®žçŽ°åŠŸèƒ½å•ä¸€ï¼Œå³å›žå¤ä¸€ä¸ª Echo åº”ç­”æ•°æ®åŒ…
  */
 static void
 icmp_echo(struct icmphdr *icmph, struct sk_buff *skb, struct device *dev,
-	  unsigned long saddr, unsigned long daddr, int len,
-	  struct options *opt)
+		  unsigned long saddr, unsigned long daddr, int len,
+		  struct options *opt)
 {
-  struct icmphdr *icmphr;
-  struct sk_buff *skb2;
-  int size, offset;
+	struct icmphdr *icmphr;
+	struct sk_buff *skb2;
+	int size, offset;
 
-  size = sizeof(struct sk_buff) + dev->hard_header_len + 64 + len;
-  skb2 = alloc_skb(size, GFP_ATOMIC);
-  if (skb2 == NULL) {
+	size = sizeof(struct sk_buff) + dev->hard_header_len + 64 + len;
+	skb2 = alloc_skb(size, GFP_ATOMIC);
+	if (skb2 == NULL)
+	{
+		skb->sk = NULL;
+		kfree_skb(skb, FREE_READ);
+		return;
+	}
+	skb2->sk = NULL;
+	skb2->mem_addr = skb2;
+	skb2->mem_len = size;
+	skb2->free = 1;
+
+	/* Build Layer 2-3 headers for message back to source */
+	offset = ip_build_header(skb2, daddr, saddr, &dev,
+							 IPPROTO_ICMP, opt, len, skb->ip_hdr->tos, 255);
+	if (offset < 0)
+	{
+		printk("ICMP: Could not build IP Header for ICMP ECHO Response\n");
+		kfree_skb(skb2, FREE_WRITE);
+		skb->sk = NULL;
+		kfree_skb(skb, FREE_READ);
+		return;
+	}
+
+	/* Re-adjust length according to actual IP header size. */
+	skb2->len = offset + len;
+
+	/* Build ICMP_ECHO Response message. */
+	icmphr = (struct icmphdr *)(skb2->data + offset);
+	memcpy((char *)icmphr, (char *)icmph, len);
+	icmphr->type = ICMP_ECHOREPLY;
+	icmphr->code = 0;
+	icmphr->checksum = 0;
+	icmphr->checksum = ip_compute_csum((unsigned char *)icmphr, len);
+
+	/* Ship it out - free it when done */
+	ip_queue_xmit((struct sock *)NULL, dev, skb2, 1);
+
 	skb->sk = NULL;
 	kfree_skb(skb, FREE_READ);
-	return;
-  }
-  skb2->sk = NULL;
-  skb2->mem_addr = skb2;
-  skb2->mem_len = size;
-  skb2->free = 1;
-
-  /* Build Layer 2-3 headers for message back to source */
-  offset = ip_build_header(skb2, daddr, saddr, &dev,
-			 	IPPROTO_ICMP, opt, len, skb->ip_hdr->tos,255);
-  if (offset < 0) {
-	printk("ICMP: Could not build IP Header for ICMP ECHO Response\n");
-	kfree_skb(skb2,FREE_WRITE);
-	skb->sk = NULL;
-	kfree_skb(skb, FREE_READ);
-	return;
-  }
-
-  /* Re-adjust length according to actual IP header size. */
-  skb2->len = offset + len;
-
-  /* Build ICMP_ECHO Response message. */
-  icmphr = (struct icmphdr *) (skb2->data + offset);
-  memcpy((char *) icmphr, (char *) icmph, len);
-  icmphr->type = ICMP_ECHOREPLY;
-  icmphr->code = 0;
-  icmphr->checksum = 0;
-  icmphr->checksum = ip_compute_csum((unsigned char *)icmphr, len);
-
-  /* Ship it out - free it when done */
-  ip_queue_xmit((struct sock *)NULL, dev, skb2, 1);
-
-  skb->sk = NULL;
-  kfree_skb(skb, FREE_READ);
 }
-
 
 /* Handle the ICMP INFORMATION REQUEST. */
 static void
 icmp_info(struct icmphdr *icmph, struct sk_buff *skb, struct device *dev,
-	  unsigned long saddr, unsigned long daddr, int len,
-	  struct options *opt)
+		  unsigned long saddr, unsigned long daddr, int len,
+		  struct options *opt)
 {
-  /* NOT YET */
-  skb->sk = NULL;
-  kfree_skb(skb, FREE_READ);
+	/* NOT YET */
+	skb->sk = NULL;
+	kfree_skb(skb, FREE_READ);
 }
-
 
 /* Handle ICMP_ADRESS_MASK requests. */
 static void
 icmp_address(struct icmphdr *icmph, struct sk_buff *skb, struct device *dev,
-	  unsigned long saddr, unsigned long daddr, int len,
-	  struct options *opt)
+			 unsigned long saddr, unsigned long daddr, int len,
+			 struct options *opt)
 {
-  struct icmphdr *icmphr;
-  struct sk_buff *skb2;
-  int size, offset;
+	struct icmphdr *icmphr;
+	struct sk_buff *skb2;
+	int size, offset;
 
-  size = sizeof(struct sk_buff) + dev->hard_header_len + 64 + len;
-  skb2 = alloc_skb(size, GFP_ATOMIC);
-  if (skb2 == NULL) {
+	size = sizeof(struct sk_buff) + dev->hard_header_len + 64 + len;
+	skb2 = alloc_skb(size, GFP_ATOMIC);
+	if (skb2 == NULL)
+	{
+		skb->sk = NULL;
+		kfree_skb(skb, FREE_READ);
+		return;
+	}
+	skb2->sk = NULL;
+	skb2->mem_addr = skb2;
+	skb2->mem_len = size;
+	skb2->free = 1;
+
+	/* Build Layer 2-3 headers for message back to source */
+	offset = ip_build_header(skb2, daddr, saddr, &dev,
+							 IPPROTO_ICMP, opt, len, skb->ip_hdr->tos, 255);
+	if (offset < 0)
+	{
+		printk("ICMP: Could not build IP Header for ICMP ADDRESS Response\n");
+		kfree_skb(skb2, FREE_WRITE);
+		skb->sk = NULL;
+		kfree_skb(skb, FREE_READ);
+		return;
+	}
+
+	/* Re-adjust length according to actual IP header size. */
+	skb2->len = offset + len;
+
+	/* Build ICMP ADDRESS MASK Response message. */
+	icmphr = (struct icmphdr *)(skb2->data + offset);
+	icmphr->type = ICMP_ADDRESSREPLY;
+	icmphr->code = 0;
+	icmphr->checksum = 0;
+	icmphr->un.echo.id = icmph->un.echo.id;
+	icmphr->un.echo.sequence = icmph->un.echo.sequence;
+	memcpy((char *)(icmphr + 1), (char *)&dev->pa_mask, sizeof(dev->pa_mask));
+
+	icmphr->checksum = ip_compute_csum((unsigned char *)icmphr, len);
+
+	/* Ship it out - free it when done */
+	ip_queue_xmit((struct sock *)NULL, dev, skb2, 1);
+
 	skb->sk = NULL;
 	kfree_skb(skb, FREE_READ);
-	return;
-  }
-  skb2->sk = NULL;
-  skb2->mem_addr = skb2;
-  skb2->mem_len = size;
-  skb2->free = 1;
-
-  /* Build Layer 2-3 headers for message back to source */
-  offset = ip_build_header(skb2, daddr, saddr, &dev,
-			 	IPPROTO_ICMP, opt, len, skb->ip_hdr->tos,255);
-  if (offset < 0) {
-	printk("ICMP: Could not build IP Header for ICMP ADDRESS Response\n");
-	kfree_skb(skb2,FREE_WRITE);
-	skb->sk = NULL;
-	kfree_skb(skb, FREE_READ);
-	return;
-  }
-
-  /* Re-adjust length according to actual IP header size. */
-  skb2->len = offset + len;
-
-  /* Build ICMP ADDRESS MASK Response message. */
-  icmphr = (struct icmphdr *) (skb2->data + offset);
-  icmphr->type = ICMP_ADDRESSREPLY;
-  icmphr->code = 0;
-  icmphr->checksum = 0;
-  icmphr->un.echo.id = icmph->un.echo.id;
-  icmphr->un.echo.sequence = icmph->un.echo.sequence;
-  memcpy((char *) (icmphr + 1), (char *) &dev->pa_mask, sizeof(dev->pa_mask));
-
-  icmphr->checksum = ip_compute_csum((unsigned char *)icmphr, len);
-
-  /* Ship it out - free it when done */
-  ip_queue_xmit((struct sock *)NULL, dev, skb2, 1);
-
-  skb->sk = NULL;
-  kfree_skb(skb, FREE_READ);
 }
 
-
 /* Deal with incoming ICMP packets. */
-/* icmpÐ­ÒéÊý¾Ý½ÓÊÕº¯Êý£¬µ±Í¨¹ýIPÐ­Òé·¢ËÍÊý¾ÝÊ±£¬
-  * Êý¾Ý°ü·¢ËÍµ½Ä³¸öÂ·ÓÉÆ÷»òÕ¾µãÊ±£¬ÓÉÓÚ¸÷ÖÖÔ­ÒòÎÞ·¨ÔÙ¼ÌÐø 
-  * ·¢ËÍÊ±£¬´ËÊ±Êý¾Ý°üËùÔÚµÄÕ¾µã¾Í»á¸øÊý¾Ý°üµÄÔ´Õ¾µã·¢ËÍ 
-  * Êý¾Ý°ü²»¿É´ïÐÅÏ¢£¬ÔÚ¸Ãº¯ÊýÖÐ»áµ÷ÓÃicmp_unreachº¯Êý  
+/* icmpåè®®æ•°æ®æŽ¥æ”¶å‡½æ•°ï¼Œå½“é€šè¿‡IPåè®®å‘é€æ•°æ®æ—¶ï¼Œ
+  * æ•°æ®åŒ…å‘é€åˆ°æŸä¸ªè·¯ç”±å™¨æˆ–ç«™ç‚¹æ—¶ï¼Œç”±äºŽå„ç§åŽŸå› æ— æ³•å†ç»§ç»­ 
+  * å‘é€æ—¶ï¼Œæ­¤æ—¶æ•°æ®åŒ…æ‰€åœ¨çš„ç«™ç‚¹å°±ä¼šç»™æ•°æ®åŒ…çš„æºç«™ç‚¹å‘é€ 
+  * æ•°æ®åŒ…ä¸å¯è¾¾ä¿¡æ¯ï¼Œåœ¨è¯¥å‡½æ•°ä¸­ä¼šè°ƒç”¨icmp_unreachå‡½æ•°  
   */
-int
-icmp_rcv(struct sk_buff *skb1, struct device *dev, struct options *opt,
-	 unsigned long daddr, unsigned short len,
-	 unsigned long saddr, int redo, struct inet_protocol *protocol)
+int icmp_rcv(struct sk_buff *skb1, struct device *dev, struct options *opt,
+			 unsigned long daddr, unsigned short len,
+			 unsigned long saddr, int redo, struct inet_protocol *protocol)
 {
-  struct icmphdr *icmph;
-  unsigned char *buff;
+	struct icmphdr *icmph;
+	unsigned char *buff;
 
-  /* Drop broadcast packets. */
-  if (chk_addr(daddr) == IS_BROADCAST) {
-	DPRINTF((DBG_ICMP, "ICMP: Discarded broadcast from %s\n",
-							in_ntoa(saddr)));
-	skb1->sk = NULL;
-	kfree_skb(skb1, FREE_READ);
-	return(0);
-  }
+	/* Drop broadcast packets. */
+	if (chk_addr(daddr) == IS_BROADCAST)
+	{
+		DPRINTF((DBG_ICMP, "ICMP: Discarded broadcast from %s\n",
+				 in_ntoa(saddr)));
+		skb1->sk = NULL;
+		kfree_skb(skb1, FREE_READ);
+		return (0);
+	}
 
-  buff = skb1->h.raw;
-  icmph = (struct icmphdr *) buff;
+	buff = skb1->h.raw;
+	icmph = (struct icmphdr *)buff;
 
-  /* Validate the packet first */
-  if (ip_compute_csum((unsigned char *) icmph, len)) {
-	/* Failed checksum! */
-	printk("ICMP: failed checksum from %s!\n", in_ntoa(saddr));
-	skb1->sk = NULL;
-	kfree_skb(skb1, FREE_READ);
-	return(0);
-  }
-  print_icmp(icmph);
+	/* Validate the packet first */
+	if (ip_compute_csum((unsigned char *)icmph, len))
+	{
+		/* Failed checksum! */
+		printk("ICMP: failed checksum from %s!\n", in_ntoa(saddr));
+		skb1->sk = NULL;
+		kfree_skb(skb1, FREE_READ);
+		return (0);
+	}
+	print_icmp(icmph);
 
-  /* Parse the ICMP message */
-  switch(icmph->type) {
+	/* Parse the ICMP message */
+	switch (icmph->type)
+	{
 	case ICMP_TIME_EXCEEDED:
 	case ICMP_DEST_UNREACH:
 	case ICMP_SOURCE_QUENCH:
 		icmp_unreach(icmph, skb1);
-		return(0);
+		return (0);
 	case ICMP_REDIRECT:
 		icmp_redirect(icmph, skb1, dev);
-		return(0);
-	case ICMP_ECHO: 
+		return (0);
+	case ICMP_ECHO:
 		icmp_echo(icmph, skb1, dev, saddr, daddr, len, opt);
 		return 0;
 	case ICMP_ECHOREPLY:
 		skb1->sk = NULL;
 		kfree_skb(skb1, FREE_READ);
-		return(0);
+		return (0);
 	case ICMP_INFO_REQUEST:
 		icmp_info(icmph, skb1, dev, saddr, daddr, len, opt);
 		return 0;
 	case ICMP_INFO_REPLY:
 		skb1->sk = NULL;
 		kfree_skb(skb1, FREE_READ);
-		return(0);
+		return (0);
 	case ICMP_ADDRESS:
 		icmp_address(icmph, skb1, dev, saddr, daddr, len, opt);
 		return 0;
 	case ICMP_ADDRESSREPLY:
 		skb1->sk = NULL;
 		kfree_skb(skb1, FREE_READ);
-		return(0);
+		return (0);
 	default:
 		DPRINTF((DBG_ICMP,
-			"ICMP: Unsupported ICMP from %s, type = 0x%X\n",
-						in_ntoa(saddr), icmph->type));
+				 "ICMP: Unsupported ICMP from %s, type = 0x%X\n",
+				 in_ntoa(saddr), icmph->type));
 		skb1->sk = NULL;
 		kfree_skb(skb1, FREE_READ);
-		return(0);
-  }
-  /*NOTREACHED*/
-  skb1->sk = NULL;
-  kfree_skb(skb1, FREE_READ);
-  return(-1);
+		return (0);
+	}
+	/*NOTREACHED*/
+	skb1->sk = NULL;
+	kfree_skb(skb1, FREE_READ);
+	return (-1);
 }
 
-
 /* Perform any ICMP-related I/O control requests. */
-int
-icmp_ioctl(struct sock *sk, int cmd, unsigned long arg)
+int icmp_ioctl(struct sock *sk, int cmd, unsigned long arg)
 {
-  switch(cmd) {
+	switch (cmd)
+	{
 	case DDIOCSDBG:
-		return(dbg_ioctl((void *) arg, DBG_ICMP));
+		return (dbg_ioctl((void *)arg, DBG_ICMP));
 	default:
-		return(-EINVAL);
-  }
-  return(0);
+		return (-EINVAL);
+	}
+	return (0);
 }

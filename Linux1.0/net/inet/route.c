@@ -43,7 +43,7 @@
 #include "arp.h"
 #include "icmp.h"
 
-/* Â·ÓÉ±íÁ´±í */
+/* è·¯ç”±è¡¨é“¾è¡¨ */
 static struct rtable *rt_base = NULL;
 static struct rtable *rt_loopback = NULL;
 
@@ -51,17 +51,17 @@ static struct rtable *rt_loopback = NULL;
 static void
 rt_print(struct rtable *rt)
 {
-  if (rt == NULL || inet_debug != DBG_RT) return;
+	if (rt == NULL || inet_debug != DBG_RT)
+		return;
 
-  printk("RT: %06lx NXT=%06lx FLAGS=0x%02x\n",
-		(long) rt, (long) rt->rt_next, rt->rt_flags);
-  printk("    TARGET=%s ", in_ntoa(rt->rt_dst));
-  printk("GW=%s ", in_ntoa(rt->rt_gateway));
-  printk("    DEV=%s USE=%ld REF=%d\n",
-	(rt->rt_dev == NULL) ? "NONE" : rt->rt_dev->name,
-	rt->rt_use, rt->rt_refcnt);
+	printk("RT: %06lx NXT=%06lx FLAGS=0x%02x\n",
+		   (long)rt, (long)rt->rt_next, rt->rt_flags);
+	printk("    TARGET=%s ", in_ntoa(rt->rt_dst));
+	printk("GW=%s ", in_ntoa(rt->rt_gateway));
+	printk("    DEV=%s USE=%ld REF=%d\n",
+		   (rt->rt_dev == NULL) ? "NONE" : rt->rt_dev->name,
+		   rt->rt_use, rt->rt_refcnt);
 }
-
 
 /*
  * Remove a routing table entry.
@@ -75,8 +75,10 @@ static void rt_del(unsigned long dst)
 	rp = &rt_base;
 	save_flags(flags);
 	cli();
-	while((r = *rp) != NULL) {
-		if (r->rt_dst != dst) {
+	while ((r = *rp) != NULL)
+	{
+		if (r->rt_dst != dst)
+		{
 			rp = &r->rt_next;
 			continue;
 		}
@@ -84,15 +86,14 @@ static void rt_del(unsigned long dst)
 		if (rt_loopback == r)
 			rt_loopback = NULL;
 		kfree_s(r, sizeof(struct rtable));
-	} 
+	}
 	restore_flags(flags);
 }
-
 
 /*
  * Remove all routing table entries for a device.
  */
-/* Çå³ýÖ¸¶¨Éè±¸µÄÂ·ÓÉ±íÏîÄ¿
+/* æ¸…é™¤æŒ‡å®šè®¾å¤‡çš„è·¯ç”±è¡¨é¡¹ç›®
  */
 void rt_flush(struct device *dev)
 {
@@ -104,8 +105,10 @@ void rt_flush(struct device *dev)
 	rp = &rt_base;
 	cli();
 	save_flags(flags);
-	while ((r = *rp) != NULL) {
-		if (r->rt_dev != dev) {
+	while ((r = *rp) != NULL)
+	{
+		if (r->rt_dev != dev)
+		{
 			rp = &r->rt_next;
 			continue;
 		}
@@ -113,7 +116,7 @@ void rt_flush(struct device *dev)
 		if (rt_loopback == r)
 			rt_loopback = NULL;
 		kfree_s(r, sizeof(struct rtable));
-	} 
+	}
 	restore_flags(flags);
 }
 
@@ -134,7 +137,7 @@ static inline unsigned long default_mask(unsigned long dst)
 	return htonl(IN_CLASSC_NET);
 }
 
-static unsigned long guess_mask(unsigned long dst, struct device * dev)
+static unsigned long guess_mask(unsigned long dst, struct device *dev)
 {
 	unsigned long mask;
 
@@ -146,11 +149,12 @@ static unsigned long guess_mask(unsigned long dst, struct device * dev)
 	return dev->pa_mask;
 }
 
-static inline struct device * get_gw_dev(unsigned long gw)
+static inline struct device *get_gw_dev(unsigned long gw)
 {
-	struct rtable * rt;
+	struct rtable *rt;
 
-	for (rt = rt_base ; ; rt = rt->rt_next) {
+	for (rt = rt_base;; rt = rt->rt_next)
+	{
 		if (!rt)
 			return NULL;
 		if ((gw ^ rt->rt_dst) & rt->rt_mask)
@@ -165,50 +169,59 @@ static inline struct device * get_gw_dev(unsigned long gw)
 /*
  * rewrote rt_add(), as the old one was weird. Linus
  */
-/* Ìí¼ÓÒ»¸öÐÂµÄÂ·ÓÉ±íÏî
- * flags£ºÂ·ÓÉ±íÏî±êÖ¾Î»¡£
- * dst£ºÄ¿µÄIPµØÖ·¡£
- * mask£º×ÓÍøÑÚÂë¡£
- * gw£ºµ½´ïÄ¿µÄÖ÷»úµÄÍø¹ØIPµØÖ·¡£
- * dev£º·¢ËÍµ½Ä¿µÄµØÖ·Ö÷»úµÄ½Ó¿Ú¡£
- * mtu£º·¢ËÍ¶ÔÓ¦Ä¿µÄµØÖ·Ö÷»úµÄ×î´ó±¨ÎÄ³¤¶È¡£
- * window£º´°¿ÚÖµ£¬ÒâÒåÔÚÏà¹Ø´úÂëÖÐ¸ø³ö¡£
- * ¶ÔÓÚÕâÐ©´«ÈëµÄ²ÎÊý£¬ip_rt_addº¯Êý²¢·ÇÒ»³É²»±äµÄÊ¹ÓÃ£¬¶øÊÇ¸ù¾ÝÐèÒª¶Ô²ÎÊýÖµ½øÐÐÐÞ
- * ¸Ä£¬ÀýÈçÈçÏÂ¶Ômask×ÓÍøÑÚÂëµÄÐÞ¸Ä¡£
+/* æ·»åŠ ä¸€ä¸ªæ–°çš„è·¯ç”±è¡¨é¡¹
+ * flagsï¼šè·¯ç”±è¡¨é¡¹æ ‡å¿—ä½ã€‚
+ * dstï¼šç›®çš„IPåœ°å€ã€‚
+ * maskï¼šå­ç½‘æŽ©ç ã€‚
+ * gwï¼šåˆ°è¾¾ç›®çš„ä¸»æœºçš„ç½‘å…³IPåœ°å€ã€‚
+ * devï¼šå‘é€åˆ°ç›®çš„åœ°å€ä¸»æœºçš„æŽ¥å£ã€‚
+ * mtuï¼šå‘é€å¯¹åº”ç›®çš„åœ°å€ä¸»æœºçš„æœ€å¤§æŠ¥æ–‡é•¿åº¦ã€‚
+ * windowï¼šçª—å£å€¼ï¼Œæ„ä¹‰åœ¨ç›¸å…³ä»£ç ä¸­ç»™å‡ºã€‚
+ * å¯¹äºŽè¿™äº›ä¼ å…¥çš„å‚æ•°ï¼Œip_rt_addå‡½æ•°å¹¶éžä¸€æˆä¸å˜çš„ä½¿ç”¨ï¼Œè€Œæ˜¯æ ¹æ®éœ€è¦å¯¹å‚æ•°å€¼è¿›è¡Œä¿®
+ * æ”¹ï¼Œä¾‹å¦‚å¦‚ä¸‹å¯¹maskå­ç½‘æŽ©ç çš„ä¿®æ”¹ã€‚
  */
 void rt_add(short flags, unsigned long dst, unsigned long mask,
-	unsigned long gw, struct device *dev)
+			unsigned long gw, struct device *dev)
 {
 	struct rtable *r, *rt;
 	struct rtable **rp;
 	unsigned long cpuflags;
 
-	if (flags & RTF_HOST) {
+	if (flags & RTF_HOST)
+	{
 		mask = 0xffffffff;
-	} else if (!mask) {
-		if (!((dst ^ dev->pa_addr) & dev->pa_mask)) {
+	}
+	else if (!mask)
+	{
+		if (!((dst ^ dev->pa_addr) & dev->pa_mask))
+		{
 			mask = dev->pa_mask;
 			flags &= ~RTF_GATEWAY;
-			if (flags & RTF_DYNAMIC) {
+			if (flags & RTF_DYNAMIC)
+			{
 				/*printk("Dynamic route to my own net rejected\n");*/
 				return;
 			}
-		} else
+		}
+		else
 			mask = guess_mask(dst, dev);
 		dst &= mask;
 	}
 	if (gw == dev->pa_addr)
 		flags &= ~RTF_GATEWAY;
-	if (flags & RTF_GATEWAY) {
+	if (flags & RTF_GATEWAY)
+	{
 		/* don't try to add a gateway we can't reach.. */
 		if (dev != get_gw_dev(gw))
 			return;
 		flags |= RTF_GATEWAY;
-	} else
+	}
+	else
 		gw = 0;
 	/* Allocate an entry. */
-	rt = (struct rtable *) kmalloc(sizeof(struct rtable), GFP_ATOMIC);
-	if (rt == NULL) {
+	rt = (struct rtable *)kmalloc(sizeof(struct rtable), GFP_ATOMIC);
+	if (rt == NULL)
+	{
 		DPRINTF((DBG_RT, "RT: no memory for new route!\n"));
 		return;
 	}
@@ -229,8 +242,10 @@ void rt_add(short flags, unsigned long dst, unsigned long mask,
 	cli();
 	/* remove old route if we are getting a duplicate. */
 	rp = &rt_base;
-	while ((r = *rp) != NULL) {
-		if (r->rt_dst != dst) {
+	while ((r = *rp) != NULL)
+	{
+		if (r->rt_dst != dst)
+		{
 			rp = &r->rt_next;
 			continue;
 		}
@@ -241,7 +256,8 @@ void rt_add(short flags, unsigned long dst, unsigned long mask,
 	}
 	/* add the new route */
 	rp = &rt_base;
-	while ((r = *rp) != NULL) {
+	while ((r = *rp) != NULL)
+	{
 		if ((r->rt_mask & mask) != mask)
 			break;
 		rp = &r->rt_next;
@@ -254,16 +270,16 @@ void rt_add(short flags, unsigned long dst, unsigned long mask,
 	return;
 }
 
-/* ÓÃÓÚ¼ì²â¶ÔÓ¦Ò»¸öµØÖ·µÄ×ÓÍøÑÚÂëÊÇ·ñÕýÈ·¡£ Ò»°ã¶øÑÔ£¬ Ò»¸ö×ÓÍøÑÚÂëÊÇ¸ßÎ»
- * Á¬ÐøÎª1£¬µÍÎ»Á¬ÐøÎª0¡£²»¿ÉÄÜ³öÏÖ0£¬1½»´íµÄÇé¿ö¡£¶ÔÓÚÕâÖÖ½»´íµÄÇé¿ö£¬¾Í±íÊ¾×ÓÍøÑÚ
- * Âë²»ÕýÈ·
+/* ç”¨äºŽæ£€æµ‹å¯¹åº”ä¸€ä¸ªåœ°å€çš„å­ç½‘æŽ©ç æ˜¯å¦æ­£ç¡®ã€‚ ä¸€èˆ¬è€Œè¨€ï¼Œ ä¸€ä¸ªå­ç½‘æŽ©ç æ˜¯é«˜ä½
+ * è¿žç»­ä¸º1ï¼Œä½Žä½è¿žç»­ä¸º0ã€‚ä¸å¯èƒ½å‡ºçŽ°0ï¼Œ1äº¤é”™çš„æƒ…å†µã€‚å¯¹äºŽè¿™ç§äº¤é”™çš„æƒ…å†µï¼Œå°±è¡¨ç¤ºå­ç½‘æŽ©
+ * ç ä¸æ­£ç¡®
  */
 static inline int bad_mask(unsigned long mask, unsigned long addr)
 {
 	if (addr & (mask = ~mask))
 		return 1;
 	mask = ntohl(mask);
-	if (mask & (mask+1))
+	if (mask & (mask + 1))
 		return 1;
 	return 0;
 }
@@ -271,11 +287,12 @@ static inline int bad_mask(unsigned long mask, unsigned long addr)
 static int rt_new(struct rtentry *r)
 {
 	int err;
-	char * devname;
-	struct device * dev = NULL;
+	char *devname;
+	struct device *dev = NULL;
 	unsigned long flags, daddr, mask, gw;
 
-	if ((devname = r->rt_dev) != NULL) {
+	if ((devname = r->rt_dev) != NULL)
+	{
 		err = getname(devname, &devname);
 		if (err)
 			return err;
@@ -289,17 +306,20 @@ static int rt_new(struct rtentry *r)
 		return -EAFNOSUPPORT;
 
 	flags = r->rt_flags;
-	daddr = ((struct sockaddr_in *) &r->rt_dst)->sin_addr.s_addr;
-	mask = ((struct sockaddr_in *) &r->rt_genmask)->sin_addr.s_addr;
-	gw = ((struct sockaddr_in *) &r->rt_gateway)->sin_addr.s_addr;
+	daddr = ((struct sockaddr_in *)&r->rt_dst)->sin_addr.s_addr;
+	mask = ((struct sockaddr_in *)&r->rt_genmask)->sin_addr.s_addr;
+	gw = ((struct sockaddr_in *)&r->rt_gateway)->sin_addr.s_addr;
 
-/* BSD emulation: Permits route add someroute gw one-of-my-addresses
+	/* BSD emulation: Permits route add someroute gw one-of-my-addresses
    to indicate which iface. Not as clean as the nice Linux dev technique
    but people keep using it... */
-	if (!dev && (flags & RTF_GATEWAY)) {
+	if (!dev && (flags & RTF_GATEWAY))
+	{
 		struct device *dev2;
-		for (dev2 = dev_base ; dev2 != NULL ; dev2 = dev2->next) {
-			if ((dev2->flags & IFF_UP) && dev2->pa_addr == gw) {
+		for (dev2 = dev_base; dev2 != NULL; dev2 = dev2->next)
+		{
+			if ((dev2->flags & IFF_UP) && dev2->pa_addr == gw)
+			{
 				flags &= ~RTF_GATEWAY;
 				dev = dev2;
 				break;
@@ -315,12 +335,14 @@ static int rt_new(struct rtentry *r)
 	else if (mask && r->rt_genmask.sa_family != AF_INET)
 		return -EAFNOSUPPORT;
 
-	if (flags & RTF_GATEWAY) {
+	if (flags & RTF_GATEWAY)
+	{
 		if (r->rt_gateway.sa_family != AF_INET)
 			return -EAFNOSUPPORT;
 		if (!dev)
 			dev = get_gw_dev(gw);
-	} else if (!dev)
+	}
+	else if (!dev)
 		dev = dev_check(daddr);
 
 	if (dev == NULL)
@@ -330,51 +352,49 @@ static int rt_new(struct rtentry *r)
 	return 0;
 }
 
-
-/* rt_killº¯ÊýÍê³ÉµÄ¹¤×÷ÕýºÃÓërt_newº¯ÊýÏà·´£ºÆä¸ù¾Ý´«ÈëµÄ²ÎÊýÉ¾³ýÒ»¸öÂ·ÓÉ±íÏî¡£É¾
- * ³ýµÄÇé¿öÏà¶ÔÌí¼ÓµÄÇé¿ö½ÏÎª¼òµ¥£¬ ÒòÎªÎÞÐè¶Ô¸÷ÖÖ²ÎÊý½øÐÐ¼ì²é£¬ Ö»ÒªÂ·ÓÉ±íÖÐ´æÔÚ¶ÔÓ¦
- * Ä¿µÄµØÖ·µÄ±íÏî£¬ Ôò¼òµ¥É¾³ýÖ®¼´¿É´ïµ½Ä¿µÄ¡£ º¯ÊýÊµÏÖ±È½Ï¼òµ¥£¬ ¹Ø¼üÊÇÔÚ404ÐÐ¶Ôrt_del
- * º¯ÊýµÄµ÷ÓÃ£¬ ´«ÈëµÄ²ÎÊýÊÇÒªÉ¾³ý±íÏî¶ÔÓ¦µÄÄ¿µÄµØÖ·ºÍ°ó¶¨Éè±¸Ãû³Æ¡£ rt_delº¯ÊýÔÚÇ°ÎÄ
- * ÖÐÒÑ¾­×÷³ö·ÖÎö£¬ÆäÖ÷ÒªÓÐrt_baseÖ¸ÏòµÄÂ·ÓÉ±íÏîÁ´±í³ö·¢£¬¶ÔÆäÖÐÃ¿¸ö±íÏî½øÐÐÄ¿µÄµØ
- * Ö·ºÍÉè±¸Ãû³ÆµÄ±È½Ï£¬Èç¹û·¢ÏÖ¶þÕß¾ùÆ¥ÅäµÄ±íÏî£¬ÔòÉ¾³ýÖ®¡£
+/* rt_killå‡½æ•°å®Œæˆçš„å·¥ä½œæ­£å¥½ä¸Žrt_newå‡½æ•°ç›¸åï¼šå…¶æ ¹æ®ä¼ å…¥çš„å‚æ•°åˆ é™¤ä¸€ä¸ªè·¯ç”±è¡¨é¡¹ã€‚åˆ 
+ * é™¤çš„æƒ…å†µç›¸å¯¹æ·»åŠ çš„æƒ…å†µè¾ƒä¸ºç®€å•ï¼Œ å› ä¸ºæ— éœ€å¯¹å„ç§å‚æ•°è¿›è¡Œæ£€æŸ¥ï¼Œ åªè¦è·¯ç”±è¡¨ä¸­å­˜åœ¨å¯¹åº”
+ * ç›®çš„åœ°å€çš„è¡¨é¡¹ï¼Œ åˆ™ç®€å•åˆ é™¤ä¹‹å³å¯è¾¾åˆ°ç›®çš„ã€‚ å‡½æ•°å®žçŽ°æ¯”è¾ƒç®€å•ï¼Œ å…³é”®æ˜¯åœ¨404è¡Œå¯¹rt_del
+ * å‡½æ•°çš„è°ƒç”¨ï¼Œ ä¼ å…¥çš„å‚æ•°æ˜¯è¦åˆ é™¤è¡¨é¡¹å¯¹åº”çš„ç›®çš„åœ°å€å’Œç»‘å®šè®¾å¤‡åç§°ã€‚ rt_delå‡½æ•°åœ¨å‰æ–‡
+ * ä¸­å·²ç»ä½œå‡ºåˆ†æžï¼Œå…¶ä¸»è¦æœ‰rt_baseæŒ‡å‘çš„è·¯ç”±è¡¨é¡¹é“¾è¡¨å‡ºå‘ï¼Œå¯¹å…¶ä¸­æ¯ä¸ªè¡¨é¡¹è¿›è¡Œç›®çš„åœ°
+ * å€å’Œè®¾å¤‡åç§°çš„æ¯”è¾ƒï¼Œå¦‚æžœå‘çŽ°äºŒè€…å‡åŒ¹é…çš„è¡¨é¡¹ï¼Œåˆ™åˆ é™¤ä¹‹ã€‚
  */
 static int rt_kill(struct rtentry *r)
 {
 	struct sockaddr_in *trg;
 
-	trg = (struct sockaddr_in *) &r->rt_dst;
+	trg = (struct sockaddr_in *)&r->rt_dst;
 	rt_del(trg->sin_addr.s_addr);
 	return 0;
 }
 
-
 /* Called from the PROCfs module. */
-/* rt_get_info·µ»ØÏµÍ³Â·ÓÉ±íÏîÐÅÏ¢£¬ ÎÒÃÇÔÚshellÏÂÇÃÈë ¡®route¡¯ ÃüÁî»òÕß ¡®netstat ¨Crn¡¯
- * ÃüÁîÊ±ÏÔÊ¾µÄÂ·ÓÉ±íÐÅÏ¢¼´ÊÇ¸Ãº¯ÊýµÄ·µ»ØÖµ¡£
- * º¯ÊýÊµÏÖÒ²ºÜ¼òµ¥£¬¶ÁÕß½áºÏrtable½á¹¹¶¨ÒåºÜÈÝÒ×Àí½â¡£
- * ÖÁ´Ë£¬ËäÈ»Â·ÓÉ±íµÄÖ÷Òª×÷ÓÃÊÇ±»IPÐ­ÒéÄ£¿é²éÑ¯Ñ°ÕÒµ½´ïÄ³¸öÄ¿µÄµØÖ·µÄºÏÊÊµÄÂ·ÓÉÍ¾
- * ¾¶£¬µ«µ½ÏÖÔÚ»¹¶¼ÊÇ¶ÔÂ·ÓÉ±íµÄÎ¬»¤£¬ÏÂÃæÎÒÃÇ½øÈëÊ¹ÓÃÂ·ÓÉ±íº¯ÊýµÄ·ÖÎö£¬ÕâÐ©º¯Êý½«±»
- * µ÷ÓÃ²éÑ¯µ½´ïÄ³¸öÄ¿µÄµØÖ·µÄÂ·ÓÉ±íÏî¡£
+/* rt_get_infoè¿”å›žç³»ç»Ÿè·¯ç”±è¡¨é¡¹ä¿¡æ¯ï¼Œ æˆ‘ä»¬åœ¨shellä¸‹æ•²å…¥ â€˜routeâ€™ å‘½ä»¤æˆ–è€… â€˜netstat â€“rnâ€™
+ * å‘½ä»¤æ—¶æ˜¾ç¤ºçš„è·¯ç”±è¡¨ä¿¡æ¯å³æ˜¯è¯¥å‡½æ•°çš„è¿”å›žå€¼ã€‚
+ * å‡½æ•°å®žçŽ°ä¹Ÿå¾ˆç®€å•ï¼Œè¯»è€…ç»“åˆrtableç»“æž„å®šä¹‰å¾ˆå®¹æ˜“ç†è§£ã€‚
+ * è‡³æ­¤ï¼Œè™½ç„¶è·¯ç”±è¡¨çš„ä¸»è¦ä½œç”¨æ˜¯è¢«IPåè®®æ¨¡å—æŸ¥è¯¢å¯»æ‰¾åˆ°è¾¾æŸä¸ªç›®çš„åœ°å€çš„åˆé€‚çš„è·¯ç”±é€”
+ * å¾„ï¼Œä½†åˆ°çŽ°åœ¨è¿˜éƒ½æ˜¯å¯¹è·¯ç”±è¡¨çš„ç»´æŠ¤ï¼Œä¸‹é¢æˆ‘ä»¬è¿›å…¥ä½¿ç”¨è·¯ç”±è¡¨å‡½æ•°çš„åˆ†æžï¼Œè¿™äº›å‡½æ•°å°†è¢«
+ * è°ƒç”¨æŸ¥è¯¢åˆ°è¾¾æŸä¸ªç›®çš„åœ°å€çš„è·¯ç”±è¡¨é¡¹ã€‚
  */
-int
-rt_get_info(char *buffer)
+int rt_get_info(char *buffer)
 {
-  struct rtable *r;
-  char *pos;
+	struct rtable *r;
+	char *pos;
 
-  pos = buffer;
+	pos = buffer;
 
-  pos += sprintf(pos,
-		 "Iface\tDestination\tGateway \tFlags\tRefCnt\tUse\tMetric\tMask\n");
-  
-  /* This isn't quite right -- r->rt_dst is a struct! */
-  for (r = rt_base; r != NULL; r = r->rt_next) {
-        pos += sprintf(pos, "%s\t%08lX\t%08lX\t%02X\t%d\t%lu\t%d\t%08lX\n",
-		r->rt_dev->name, r->rt_dst, r->rt_gateway,
-		r->rt_flags, r->rt_refcnt, r->rt_use, r->rt_metric,
-		r->rt_mask);
-  }
-  return(pos - buffer);
+	pos += sprintf(pos,
+				   "Iface\tDestination\tGateway \tFlags\tRefCnt\tUse\tMetric\tMask\n");
+
+	/* This isn't quite right -- r->rt_dst is a struct! */
+	for (r = rt_base; r != NULL; r = r->rt_next)
+	{
+		pos += sprintf(pos, "%s\t%08lX\t%08lX\t%02X\t%d\t%lu\t%d\t%08lX\n",
+					   r->rt_dev->name, r->rt_dst, r->rt_gateway,
+					   r->rt_flags, r->rt_refcnt, r->rt_use, r->rt_metric,
+					   r->rt_mask);
+	}
+	return (pos - buffer);
 }
 
 /*
@@ -382,20 +402,22 @@ rt_get_info(char *buffer)
  */
 #define early_out ({ goto no_route; 1; })
 
-/* ¸ù¾ÝµØÖ·ÕÒµ½Ò»¸öºÏÊÊµÄÂ·ÓÉ±íÏî */
-struct rtable * rt_route(unsigned long daddr, struct options *opt)
+/* æ ¹æ®åœ°å€æ‰¾åˆ°ä¸€ä¸ªåˆé€‚çš„è·¯ç”±è¡¨é¡¹ */
+struct rtable *rt_route(unsigned long daddr, struct options *opt)
 {
 	struct rtable *rt;
 
-	for (rt = rt_base; rt != NULL || early_out ; rt = rt->rt_next) {
+	for (rt = rt_base; rt != NULL || early_out; rt = rt->rt_next)
+	{
 		if (!((rt->rt_dst ^ daddr) & rt->rt_mask))
 			break;
 		/* broadcast addresses can be special cases.. */
 		if ((rt->rt_dev->flags & IFF_BROADCAST) &&
-		     rt->rt_dev->pa_brdaddr == daddr)
+			rt->rt_dev->pa_brdaddr == daddr)
 			break;
 	}
-	if (daddr == rt->rt_dev->pa_addr) {
+	if (daddr == rt->rt_dev->pa_addr)
+	{
 		if ((rt = rt_loopback) == NULL)
 			goto no_route;
 	}
@@ -405,12 +427,12 @@ no_route:
 	return NULL;
 }
 
-static int get_old_rtent(struct old_rtentry * src, struct rtentry * rt)
+static int get_old_rtent(struct old_rtentry *src, struct rtentry *rt)
 {
 	int err;
 	struct old_rtentry tmp;
 
-	err=verify_area(VERIFY_READ, src, sizeof(*src));
+	err = verify_area(VERIFY_READ, src, sizeof(*src));
 	if (err)
 		return err;
 	memcpy_fromfs(&tmp, src, sizeof(*src));
@@ -418,7 +440,7 @@ static int get_old_rtent(struct old_rtentry * src, struct rtentry * rt)
 	rt->rt_dst = tmp.rt_dst;
 	rt->rt_gateway = tmp.rt_gateway;
 	rt->rt_genmask.sa_family = AF_INET;
-	((struct sockaddr_in *) &rt->rt_genmask)->sin_addr.s_addr = tmp.rt_genmask;
+	((struct sockaddr_in *)&rt->rt_genmask)->sin_addr.s_addr = tmp.rt_genmask;
 	rt->rt_flags = tmp.rt_flags;
 	rt->rt_dev = tmp.rt_dev;
 	return 0;
@@ -429,14 +451,15 @@ int rt_ioctl(unsigned int cmd, void *arg)
 	int err;
 	struct rtentry rt;
 
-	switch(cmd) {
+	switch (cmd)
+	{
 	case DDIOCSDBG:
 		return dbg_ioctl(arg, DBG_RT);
 	case SIOCADDRTOLD:
 	case SIOCDELRTOLD:
 		if (!suser())
 			return -EPERM;
-		err = get_old_rtent((struct old_rtentry *) arg, &rt);
+		err = get_old_rtent((struct old_rtentry *)arg, &rt);
 		if (err)
 			return err;
 		return (cmd == SIOCDELRTOLD) ? rt_kill(&rt) : rt_new(&rt);
@@ -444,7 +467,7 @@ int rt_ioctl(unsigned int cmd, void *arg)
 	case SIOCDELRT:
 		if (!suser())
 			return -EPERM;
-		err=verify_area(VERIFY_READ, arg, sizeof(struct rtentry));
+		err = verify_area(VERIFY_READ, arg, sizeof(struct rtentry));
 		if (err)
 			return err;
 		memcpy_fromfs(&rt, arg, sizeof(struct rtentry));

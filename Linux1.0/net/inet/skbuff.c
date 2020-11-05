@@ -34,7 +34,6 @@
 #include "skbuff.h"
 #include "sock.h"
 
-
 /* Socket buffer operations. Ideally much of this list swap stuff ought to be using
    exch instructions on the 386, and CAS/CAS2 on a 68K. This is the boring generic
    slow C version. No doubt when Linus sees this comment he'll do horrible things
@@ -44,42 +43,41 @@
 /*
  *	Resource tracking variables
  */
- 
+
 /* 系统中sk_buff占用的内存大大小
  */
-volatile unsigned long net_memory=0;
+volatile unsigned long net_memory = 0;
 /* 系统中sk_buff的数量
  */
-volatile unsigned long net_skbcount=0;
+volatile unsigned long net_skbcount = 0;
 
 /*
  *	Debugging paranoia. Can go later when this crud stack works
  */
-
 
 /* 对struct sk_buff进行检查的一个函数，其中的line代表文件中的行，
  * file代表文件名称 
  */
 void skb_check(struct sk_buff *skb, int line, char *file)
 {
-	if(skb->magic_debug_cookie==SK_FREED_SKB)
+	if (skb->magic_debug_cookie == SK_FREED_SKB)
 	{
 		printk("File: %s Line %d, found a freed skb lurking in the undergrowth!\n",
-			file,line);
+			   file, line);
 		printk("skb=%p, real size=%ld, claimed size=%ld, magic=%d, list=%p, free=%d\n",
-			skb,skb->truesize,skb->mem_len,skb->magic,skb->list,skb->free);
+			   skb, skb->truesize, skb->mem_len, skb->magic, skb->list, skb->free);
 	}
-	if(skb->magic_debug_cookie!=SK_GOOD_SKB)
+	if (skb->magic_debug_cookie != SK_GOOD_SKB)
 	{
-		printk("File: %s Line %d, passed a non skb!\n", file,line);
+		printk("File: %s Line %d, passed a non skb!\n", file, line);
 		printk("skb=%p, real size=%ld, claimed size=%ld, magic=%d, list=%p, free=%d\n",
-			skb,skb->truesize,skb->mem_len,skb->magic,skb->list,skb->free);
+			   skb, skb->truesize, skb->mem_len, skb->magic, skb->list, skb->free);
 	}
-	if(skb->mem_len!=skb->truesize)
+	if (skb->mem_len != skb->truesize)
 	{
-		printk("File: %s Line %d, Dubious size setting!\n",file,line);
+		printk("File: %s Line %d, Dubious size setting!\n", file, line);
 		printk("skb=%p, real size=%ld, claimed size=%ld, magic=%d, list=%p\n",
-			skb,skb->truesize,skb->mem_len,skb->magic,skb->list);
+			   skb, skb->truesize, skb->mem_len, skb->magic, skb->list);
 	}
 	/* Guess it might be acceptable then */
 }
@@ -89,29 +87,29 @@ void skb_check(struct sk_buff *skb, int line, char *file)
  */
 
 /* 将newsk添加到list首部当中，并且让newsk作为链表首部 */
-void skb_queue_head(struct sk_buff *volatile* list,struct sk_buff *newsk)
+void skb_queue_head(struct sk_buff *volatile *list, struct sk_buff *newsk)
 {
 	unsigned long flags;
 
 	IS_SKB(newsk);
-	if(newsk->list)
+	if (newsk->list)
 		printk("Suspicious queue head: sk_buff on list!\n");
 	save_flags(flags);
 	cli();
 	/* 设置新sk_buff的头部，所有的sk_buff中的list都指向同一个头部 */
-	newsk->list=list;
+	newsk->list = list;
 
-	newsk->next=*list;
+	newsk->next = *list;
 
-	if(*list)
-		newsk->prev=(*list)->prev;
+	if (*list)
+		newsk->prev = (*list)->prev;
 	else
-		newsk->prev=newsk;
-	newsk->prev->next=newsk;
-	newsk->next->prev=newsk;
+		newsk->prev = newsk;
+	newsk->prev->next = newsk;
+	newsk->next->prev = newsk;
 	IS_SKB(newsk->prev);
 	IS_SKB(newsk->next);
-	*list=newsk;
+	*list = newsk;
 	restore_flags(flags);
 }
 
@@ -119,11 +117,11 @@ void skb_queue_head(struct sk_buff *volatile* list,struct sk_buff *newsk)
  *	Insert an sk_buff at the end of a list.
  */
 /* 添加到list的尾部 */
-void skb_queue_tail(struct sk_buff *volatile* list, struct sk_buff *newsk)
+void skb_queue_tail(struct sk_buff *volatile *list, struct sk_buff *newsk)
 {
 	unsigned long flags;
 
-	if(newsk->list)
+	if (newsk->list)
 		printk("Suspicious queue tail: sk_buff on list!\n");
 
 	IS_SKB(newsk);
@@ -131,24 +129,23 @@ void skb_queue_tail(struct sk_buff *volatile* list, struct sk_buff *newsk)
 	cli();
 
 	/*设置newsk首部 */
-	newsk->list=list;
-	if(*list)
+	newsk->list = list;
+	if (*list)
 	{
-		(*list)->prev->next=newsk;
-		newsk->prev=(*list)->prev;
-		newsk->next=*list;
-		(*list)->prev=newsk;
+		(*list)->prev->next = newsk;
+		newsk->prev = (*list)->prev;
+		newsk->next = *list;
+		(*list)->prev = newsk;
 	}
 	else
 	{
-		newsk->next=newsk;
-		newsk->prev=newsk;
-		*list=newsk;
+		newsk->next = newsk;
+		newsk->prev = newsk;
+		*list = newsk;
 	}
 	IS_SKB(newsk->prev);
 	IS_SKB(newsk->next);
 	restore_flags(flags);
-
 }
 
 /*
@@ -158,7 +155,7 @@ void skb_queue_tail(struct sk_buff *volatile* list, struct sk_buff *newsk)
 
 /* 将list为队首的双向队列中的第一个给取出
  */
-struct sk_buff *skb_dequeue(struct sk_buff *volatile* list)
+struct sk_buff *skb_dequeue(struct sk_buff *volatile *list)
 {
 	long flags;
 	struct sk_buff *result;
@@ -166,34 +163,34 @@ struct sk_buff *skb_dequeue(struct sk_buff *volatile* list)
 	save_flags(flags);
 	cli();
 
-	if(*list==NULL)
+	if (*list == NULL)
 	{
 		restore_flags(flags);
-		return(NULL);
+		return (NULL);
 	}
 
-	result=*list;
+	result = *list;
 	/* 如果只有一个节点 */
-	if(result->next==result)
-		*list=NULL;
+	if (result->next == result)
+		*list = NULL;
 	else
 	{
-		result->next->prev=result->prev;
-		result->prev->next=result->next;
-		*list=result->next;
+		result->next->prev = result->prev;
+		result->prev->next = result->next;
+		*list = result->next;
 	}
 
 	IS_SKB(result);
 	restore_flags(flags);
 
-	if(result->list!=list)
+	if (result->list != list)
 		printk("Dequeued packet has invalid list pointer\n");
 
-	result->list=0;
+	result->list = 0;
 	/* 断开双向连接 */
-	result->next=0;
-	result->prev=0;
-	return(result);
+	result->next = 0;
+	result->prev = 0;
+	return (result);
 }
 
 /*
@@ -208,18 +205,18 @@ void skb_insert(struct sk_buff *old, struct sk_buff *newsk)
 	IS_SKB(old);
 	IS_SKB(newsk);
 
-	if(!old->list)
+	if (!old->list)
 		printk("insert before unlisted item!\n");
-	if(newsk->list)
+	if (newsk->list)
 		printk("inserted item is already on a list.\n");
 
 	save_flags(flags);
 	cli();
-	newsk->list=old->list;
-	newsk->next=old;
-	newsk->prev=old->prev;
-	newsk->next->prev=newsk;
-	newsk->prev->next=newsk;
+	newsk->list = old->list;
+	newsk->next = old;
+	newsk->prev = old->prev;
+	newsk->next->prev = newsk;
+	newsk->prev->next = newsk;
 
 	restore_flags(flags);
 }
@@ -236,18 +233,18 @@ void skb_append(struct sk_buff *old, struct sk_buff *newsk)
 	IS_SKB(old);
 	IS_SKB(newsk);
 
-	if(!old->list)
+	if (!old->list)
 		printk("append before unlisted item!\n");
-	if(newsk->list)
+	if (newsk->list)
 		printk("append item is already on a list.\n");
 
 	save_flags(flags);
 	cli();
-	newsk->list=old->list;
-	newsk->prev=old;
-	newsk->next=old->next;
-	newsk->next->prev=newsk;
-	newsk->prev->next=newsk;
+	newsk->list = old->list;
+	newsk->prev = old;
+	newsk->next = old->next;
+	newsk->next->prev = newsk;
+	newsk->prev->next = newsk;
 
 	restore_flags(flags);
 }
@@ -269,24 +266,24 @@ void skb_unlink(struct sk_buff *skb)
 	IS_SKB(skb);
 
 	/* 判断队列的首部是否为NULL */
-	if(skb->list)
+	if (skb->list)
 	{
-		skb->next->prev=skb->prev;
-		skb->prev->next=skb->next;
+		skb->next->prev = skb->prev;
+		skb->prev->next = skb->next;
 		/* 如果自己是首部 */
-		if(*skb->list==skb)
+		if (*skb->list == skb)
 		{
 			/* 如果队列中只有skb一个，则skb的list要设置为NULL,
 			 * 否则就将skb的下一个作为队首 
 			 */
-			if(skb->next==skb)
-				*skb->list=NULL;
+			if (skb->next == skb)
+				*skb->list = NULL;
 			else
-				*skb->list=skb->next;
+				*skb->list = skb->next;
 		}
-		skb->next=0;
-		skb->prev=0;
-		skb->list=0;
+		skb->next = 0;
+		skb->prev = 0;
+		skb->list = 0;
 	}
 	restore_flags(flags);
 }
@@ -297,20 +294,19 @@ void skb_unlink(struct sk_buff *skb)
  *	shifting
  */
 
-void skb_new_list_head(struct sk_buff *volatile* list)
+void skb_new_list_head(struct sk_buff *volatile *list)
 {
-	struct sk_buff *skb=skb_peek(list);
+	struct sk_buff *skb = skb_peek(list);
 	/* 如果队首为空，则不做任何处理 */
-	if(skb!=NULL)
+	if (skb != NULL)
 	{
-	    /* 将队中所有节点给检查一遍，并设置队首为list */
+		/* 将队中所有节点给检查一遍，并设置队首为list */
 		do
 		{
 			IS_SKB(skb);
-			skb->list=list;
-			skb=skb->next;
-		}
-		while(skb!=*list);
+			skb->list = list;
+			skb = skb->next;
+		} while (skb != *list);
 	}
 }
 
@@ -322,7 +318,7 @@ void skb_new_list_head(struct sk_buff *volatile* list)
  */
 
 /* 函数作用很简单，就是取出一个指向sk_buff的指针 */
-struct sk_buff *skb_peek(struct sk_buff *volatile* list)
+struct sk_buff *skb_peek(struct sk_buff *volatile *list)
 {
 	return *list;
 }
@@ -335,9 +331,9 @@ struct sk_buff *skb_peek(struct sk_buff *volatile* list)
  *	as nice as I'd like.
  */
 
-struct sk_buff *skb_peek_copy(struct sk_buff *volatile* list)
+struct sk_buff *skb_peek_copy(struct sk_buff *volatile *list)
 {
-	struct sk_buff *orig,*newsk;
+	struct sk_buff *orig, *newsk;
 	unsigned long flags;
 	unsigned int len;
 	/* Now for some games to avoid races */
@@ -346,51 +342,50 @@ struct sk_buff *skb_peek_copy(struct sk_buff *volatile* list)
 	{
 		save_flags(flags);
 		cli();
-		orig=skb_peek(list);
-		if(orig==NULL)
+		orig = skb_peek(list);
+		if (orig == NULL)
 		{
 			restore_flags(flags);
 			return NULL;
 		}
 		IS_SKB(orig);
-		len=orig->truesize;
+		len = orig->truesize;
 		restore_flags(flags);
 
-		newsk=alloc_skb(len,GFP_KERNEL);	/* May sleep */
+		newsk = alloc_skb(len, GFP_KERNEL); /* May sleep */
 
-		if(newsk==NULL)		/* Oh dear... not to worry */
+		if (newsk == NULL) /* Oh dear... not to worry */
 			return NULL;
 
 		save_flags(flags);
 		cli();
-		if(skb_peek(list)!=orig)	/* List changed go around another time */
+		if (skb_peek(list) != orig) /* List changed go around another time */
 		{
 			restore_flags(flags);
-			newsk->sk=NULL;
-			newsk->free=1;
-			newsk->mem_addr=newsk;
-			newsk->mem_len=len;
+			newsk->sk = NULL;
+			newsk->free = 1;
+			newsk->mem_addr = newsk;
+			newsk->mem_len = len;
 			kfree_skb(newsk, FREE_WRITE);
 			continue;
 		}
 
 		IS_SKB(orig);
 		IS_SKB(newsk);
-		memcpy(newsk,orig,len);
-		newsk->list=NULL;
-		newsk->magic=0;
-		newsk->next=NULL;
-		newsk->prev=NULL;
-		newsk->mem_addr=newsk;
-		newsk->h.raw+=((char *)newsk-(char *)orig);
-		newsk->link3=NULL;
-		newsk->sk=NULL;
-		newsk->free=1;
-	}
-	while(0);
+		memcpy(newsk, orig, len);
+		newsk->list = NULL;
+		newsk->magic = 0;
+		newsk->next = NULL;
+		newsk->prev = NULL;
+		newsk->mem_addr = newsk;
+		newsk->h.raw += ((char *)newsk - (char *)orig);
+		newsk->link3 = NULL;
+		newsk->sk = NULL;
+		newsk->free = 1;
+	} while (0);
 
 	restore_flags(flags);
-	return(newsk);
+	return (newsk);
 }
 
 /*
@@ -403,42 +398,42 @@ struct sk_buff *skb_peek_copy(struct sk_buff *volatile* list)
  */
 void kfree_skb(struct sk_buff *skb, int rw)
 {
-	if (skb == NULL) {
+	if (skb == NULL)
+	{
 		printk("kfree_skb: skb = NULL\n");
 		return;
 	}
 	IS_SKB(skb);
-	if(skb->lock)
+	if (skb->lock)
 	{
-		skb->free=1;	/* Free when unlocked */
+		skb->free = 1; /* Free when unlocked */
 		return;
 	}
-	
-	if(skb->free == 2)
+
+	if (skb->free == 2)
 		printk("Warning: kfree_skb passed an skb that nobody set the free flag on!\n");
-	if(skb->list)
+	if (skb->list)
 		printk("Warning: kfree_skb passed an skb still on a list.\n");
 	skb->magic = 0;
 	if (skb->sk)
 	{
-		if(skb->sk->prot!=NULL)
+		if (skb->sk->prot != NULL)
 		{
 			if (rw)
 				skb->sk->prot->rfree(skb->sk, skb->mem_addr, skb->mem_len);
 			else
 				skb->sk->prot->wfree(skb->sk, skb->mem_addr, skb->mem_len);
-
 		}
 		else
 		{
 			/* Non INET - default wmalloc/rmalloc handler */
 			if (rw)
-				skb->sk->rmem_alloc-=skb->mem_len;
+				skb->sk->rmem_alloc -= skb->mem_len;
 			else
-				skb->sk->wmem_alloc-=skb->mem_len;
-			if(!skb->sk->dead)
-			wake_up_interruptible(skb->sk->sleep);
-			kfree_skbmem(skb->mem_addr,skb->mem_len);
+				skb->sk->wmem_alloc -= skb->mem_len;
+			if (!skb->sk->dead)
+				wake_up_interruptible(skb->sk->sleep);
+			kfree_skbmem(skb->mem_addr, skb->mem_len);
 		}
 	}
 	else
@@ -451,31 +446,32 @@ void kfree_skb(struct sk_buff *skb, int rw)
  */
 
 /* kmalloc一个sk_buf，并初始化sk_buf数据 */
-struct sk_buff *alloc_skb(unsigned int size,int priority)
+struct sk_buff *alloc_skb(unsigned int size, int priority)
 {
 	struct sk_buff *skb;
 	extern unsigned long intr_count;
 
-	if (intr_count && priority != GFP_ATOMIC) {
+	if (intr_count && priority != GFP_ATOMIC)
+	{
 		printk("alloc_skb called nonatomically from interrupt %08lx\n",
-			((unsigned long *)&size)[-1]);
+			   ((unsigned long *)&size)[-1]);
 		priority = GFP_ATOMIC;
 	}
-	skb=(struct sk_buff *)kmalloc(size,priority);
-	if(skb==NULL)
+	skb = (struct sk_buff *)kmalloc(size, priority);
+	if (skb == NULL)
 		return NULL;
-	skb->free= 2;	/* Invalid so we pick up forgetful users */
-	skb->list= 0;	/* Not on a list */
-	skb->lock= 0;
-	skb->truesize=size;
-	skb->mem_len=size;
-	skb->mem_addr=skb;
-	skb->fraglist=NULL;
-	net_memory+=size;
+	skb->free = 2; /* Invalid so we pick up forgetful users */
+	skb->list = 0; /* Not on a list */
+	skb->lock = 0;
+	skb->truesize = size;
+	skb->mem_len = size;
+	skb->mem_addr = skb;
+	skb->fraglist = NULL;
+	net_memory += size;
 	net_skbcount++;
-	skb->magic_debug_cookie=SK_GOOD_SKB;
-       /* 初始化使用skb的进程数为0 */
-	skb->users=0;   
+	skb->magic_debug_cookie = SK_GOOD_SKB;
+	/* 初始化使用skb的进程数为0 */
+	skb->users = 0;
 	return skb;
 }
 
@@ -485,23 +481,23 @@ struct sk_buff *alloc_skb(unsigned int size,int priority)
 
 /* 释放kmalloc申请的内存
  */
-void kfree_skbmem(void *mem,unsigned size)
+void kfree_skbmem(void *mem, unsigned size)
 {
-	struct sk_buff *x=mem;
+	struct sk_buff *x = mem;
 	IS_SKB(x);
-	if(x->magic_debug_cookie==SK_GOOD_SKB)
+	if (x->magic_debug_cookie == SK_GOOD_SKB)
 	{
-		x->magic_debug_cookie=SK_FREED_SKB;
-		kfree_s(mem,size);
+		x->magic_debug_cookie = SK_FREED_SKB;
+		kfree_s(mem, size);
 		net_skbcount--;
-		net_memory-=size;
+		net_memory -= size;
 	}
 }
 
 /*
  *	Skbuff device locking
  */
- 
+
 void skb_kept_by_device(struct sk_buff *skb)
 {
 	skb->lock++;
@@ -513,16 +509,17 @@ void skb_device_release(struct sk_buff *skb, int mode)
 
 	save_flags(flags);
 	cli();
-	if (!--skb->lock) {
-		if (skb->free==1)
-			kfree_skb(skb,mode);
+	if (!--skb->lock)
+	{
+		if (skb->free == 1)
+			kfree_skb(skb, mode);
 	}
 	restore_flags(flags);
 }
 
 int skb_device_locked(struct sk_buff *skb)
 {
-	if(skb->lock)
+	if (skb->lock)
 		return 1;
 	return 0;
 }

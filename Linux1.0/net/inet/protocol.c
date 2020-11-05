@@ -39,46 +39,42 @@
 #include "icmp.h"
 #include "udp.h"
 
-
 static struct inet_protocol tcp_protocol = {
-  tcp_rcv,		/* TCP handler		*/
-  NULL,			/* No fragment handler (and won't be for a long time) */
-  tcp_err,		/* TCP error control	*/
-  NULL,			/* next			*/
-  IPPROTO_TCP,		/* protocol ID		*/  /* 从ip层往上层时，通过该值可以判断是tcp协议 */
-  0,			/* copy			*/
-  NULL,			/* data			*/
-  "TCP"			/* name			*/
+	tcp_rcv,						   /* TCP handler		*/
+	NULL,							   /* No fragment handler (and won't be for a long time) */
+	tcp_err,						   /* TCP error control	*/
+	NULL,							   /* next			*/
+	IPPROTO_TCP, /* protocol ID		*/ /* 从ip层往上层时，通过该值可以判断是tcp协议 */
+	0,								   /* copy			*/
+	NULL,							   /* data			*/
+	"TCP"							   /* name			*/
 };
-
 
 static struct inet_protocol udp_protocol = {
-  udp_rcv,		/* UDP handler		*/
-  NULL,			/* Will be UDP fraglist handler */
-  udp_err,		/* UDP error control	*/
-  &tcp_protocol,	/* next			*/
-  IPPROTO_UDP,		/* protocol ID		*/
-  0,			/* copy			*/
-  NULL,			/* data			*/
-  "UDP"			/* name			*/
+	udp_rcv,	   /* UDP handler		*/
+	NULL,		   /* Will be UDP fraglist handler */
+	udp_err,	   /* UDP error control	*/
+	&tcp_protocol, /* next			*/
+	IPPROTO_UDP,   /* protocol ID		*/
+	0,			   /* copy			*/
+	NULL,		   /* data			*/
+	"UDP"		   /* name			*/
 };
-
 
 /* 互联网控制信息协议 
  * internet control message protocol
  * 基于网络层的一种协议，用来传递查询报文与差错报文的一种协议
  */
 static struct inet_protocol icmp_protocol = {
-  icmp_rcv,		/* ICMP handler		*/
-  NULL,			/* ICMP never fragments anyway */
-  NULL,			/* ICMP error control	*/
-  &udp_protocol,	/* next			*/
-  IPPROTO_ICMP,		/* protocol ID		*/
-  0,			/* copy			*/
-  NULL,			/* data			*/
-  "ICMP"		/* name			*/
+	icmp_rcv,	   /* ICMP handler		*/
+	NULL,		   /* ICMP never fragments anyway */
+	NULL,		   /* ICMP error control	*/
+	&udp_protocol, /* next			*/
+	IPPROTO_ICMP,  /* protocol ID		*/
+	0,			   /* copy			*/
+	NULL,		   /* data			*/
+	"ICMP"		   /* name			*/
 };
-
 
 struct inet_protocol *inet_protocol_base = &icmp_protocol;
 
@@ -86,88 +82,95 @@ struct inet_protocol *inet_protocol_base = &icmp_protocol;
   * 来确定调用不同的传输层协议，而链路层向网络层传输的则是struct packet_type
   */
 struct inet_protocol *inet_protos[MAX_INET_PROTOS] = {
-  NULL
-};
+	NULL};
 
 /* 通过传输层协议id获取协议 */
 struct inet_protocol *inet_get_protocol(unsigned char prot)
 {
-  unsigned char hash;
-  struct inet_protocol *p;
+	unsigned char hash;
+	struct inet_protocol *p;
 
-  DPRINTF((DBG_PROTO, "get_protocol (%d)\n ", prot));
-  hash = prot & (MAX_INET_PROTOS - 1);
-  for (p = inet_protos[hash] ; p != NULL; p=p->next) {
-	DPRINTF((DBG_PROTO, "trying protocol %d\n", p->protocol));
-	if (p->protocol == prot) return((struct inet_protocol *) p);
-  }
-  return(NULL);
+	DPRINTF((DBG_PROTO, "get_protocol (%d)\n ", prot));
+	hash = prot & (MAX_INET_PROTOS - 1);
+	for (p = inet_protos[hash]; p != NULL; p = p->next)
+	{
+		DPRINTF((DBG_PROTO, "trying protocol %d\n", p->protocol));
+		if (p->protocol == prot)
+			return ((struct inet_protocol *)p);
+	}
+	return (NULL);
 }
 
 /* 将prot协议添加到inet_protos协议数组当中
   */
 void inet_add_protocol(struct inet_protocol *prot)
 {
-  unsigned char hash;
-  struct inet_protocol *p2;
+	unsigned char hash;
+	struct inet_protocol *p2;
 
-  /* 注意是通过协议id来hash得到的一个hash数组中的索引的 */
-  hash = prot->protocol & (MAX_INET_PROTOS - 1);
+	/* 注意是通过协议id来hash得到的一个hash数组中的索引的 */
+	hash = prot->protocol & (MAX_INET_PROTOS - 1);
 	/* 将后添加的元素添加到第一个 */
-  prot ->next = inet_protos[hash];
-  inet_protos[hash] = prot;
-  prot->copy = 0;
+	prot->next = inet_protos[hash];
+	inet_protos[hash] = prot;
+	prot->copy = 0;
 
-  /* Set the copy bit if we need to. */
-  p2 = (struct inet_protocol *) prot->next;
-  while(p2 != NULL) {
-	if (p2->protocol == prot->protocol) {
-		prot->copy = 1;
-		break;
+	/* Set the copy bit if we need to. */
+	p2 = (struct inet_protocol *)prot->next;
+	while (p2 != NULL)
+	{
+		if (p2->protocol == prot->protocol)
+		{
+			prot->copy = 1;
+			break;
+		}
+		p2 = (struct inet_protocol *)prot->next;
 	}
-	p2 = (struct inet_protocol *) prot->next;
-  }
 }
 
 /* 该函数删除指定的传输层协议 */
-int
-inet_del_protocol(struct inet_protocol *prot)
+int inet_del_protocol(struct inet_protocol *prot)
 {
-  struct inet_protocol *p;
-  struct inet_protocol *lp = NULL;
-  unsigned char hash;
+	struct inet_protocol *p;
+	struct inet_protocol *lp = NULL;
+	unsigned char hash;
 
-  hash = prot->protocol & (MAX_INET_PROTOS - 1);
+	hash = prot->protocol & (MAX_INET_PROTOS - 1);
 	/* 如果是第一个，则直接删除 */
-  if (prot == inet_protos[hash]) {
-		inet_protos[hash] = (struct inet_protocol *) inet_protos[hash]->next;
-		return(0);
-  }
+	if (prot == inet_protos[hash])
+	{
+		inet_protos[hash] = (struct inet_protocol *)inet_protos[hash]->next;
+		return (0);
+	}
 
-  p = (struct inet_protocol *) inet_protos[hash];
-  while(p != NULL) {
-	/*
+	p = (struct inet_protocol *)inet_protos[hash];
+	while (p != NULL)
+	{
+		/*
 	 * We have to worry if the protocol being deleted is
 	 * the last one on the list, then we may need to reset
 	 * someones copied bit.
 	 */
-	/* 如果在next的链表中找到 */
-	if (p->next != NULL && p->next == prot) {
-		/*
+		/* 如果在next的链表中找到 */
+		if (p->next != NULL && p->next == prot)
+		{
+			/*
 		 * if we are the last one with this protocol and
 		 * there is a previous one, reset its copy bit.
 		 */
-		   /* 如果将最后一个协议删除，则将之前和该协议相同的协议的copy设置为0 */
-	     if (p->copy == 0 && lp != NULL) lp->copy = 0;
-	     p->next = prot->next;
-	     return(0);
-	}
+			/* 如果将最后一个协议删除，则将之前和该协议相同的协议的copy设置为0 */
+			if (p->copy == 0 && lp != NULL)
+				lp->copy = 0;
+			p->next = prot->next;
+			return (0);
+		}
 
-	if (p->next != NULL && p->next->protocol == prot->protocol) {
-		lp = p;
-	}
+		if (p->next != NULL && p->next->protocol == prot->protocol)
+		{
+			lp = p;
+		}
 
-	p = (struct inet_protocol *) p->next;
-  }
-  return(-1);
+		p = (struct inet_protocol *)p->next;
+	}
+	return (-1);
 }

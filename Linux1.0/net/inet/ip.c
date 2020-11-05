@@ -1,3 +1,4 @@
+
 /*
  * INET		An implementation of the TCP/IP protocol suite for the LINUX
  *		operating system.  INET is implemented using the  BSD Socket
@@ -78,63 +79,67 @@
 extern int last_retran;
 extern void sort_send(struct sock *sk);
 
-#define min(a,b)	((a)<(b)?(a):(b))
+#define min(a, b) ((a) < (b) ? (a) : (b))
 
-void
-ip_print(struct iphdr *ip)
+void ip_print(struct iphdr *ip)
 {
-  unsigned char buff[32];
-  unsigned char *ptr;
-  int addr, len, i;
+	unsigned char buff[32];
+	unsigned char *ptr;
+	int addr, len, i;
 
-  if (inet_debug != DBG_IP) return;
+	if (inet_debug != DBG_IP)
+		return;
 
-  /* Dump the IP header. */
-  printk("IP: ihl=%d, version=%d, tos=%d, tot_len=%d\n",
-	   ip->ihl, ip->version, ip->tos, ntohs(ip->tot_len));
-  printk("    id=%X, ttl=%d, prot=%d, check=%X\n",
-	   ip->id, ip->ttl, ip->protocol, ip->check);
-  printk("    frag_off=%d\n", ip->frag_off);
-  printk("    soucre=%s ", in_ntoa(ip->saddr));
-  printk("dest=%s\n", in_ntoa(ip->daddr));
-  printk("    ----\n");
+	/* Dump the IP header. */
+	printk("IP: ihl=%d, version=%d, tos=%d, tot_len=%d\n",
+		   ip->ihl, ip->version, ip->tos, ntohs(ip->tot_len));
+	printk("    id=%X, ttl=%d, prot=%d, check=%X\n",
+		   ip->id, ip->ttl, ip->protocol, ip->check);
+	printk("    frag_off=%d\n", ip->frag_off);
+	printk("    soucre=%s ", in_ntoa(ip->saddr));
+	printk("dest=%s\n", in_ntoa(ip->daddr));
+	printk("    ----\n");
 
-  /* Dump the data. */
-  ptr = (unsigned char *)(ip + 1);
-  addr = 0;
-  len = ntohs(ip->tot_len) - (4 * ip->ihl);
-  while (len > 0) {
-	printk("    %04X: ", addr);
-	for(i = 0; i < 16; i++) {
-		if (len > 0) {
-			printk("%02X ", (*ptr & 0xFF));
-			buff[i] = *ptr++;
-			if (buff[i] < 32 || buff[i] > 126) buff[i] = '.';
-		} else {
-			printk("   ");
-			buff[i] = ' ';
-		}
-		addr++;
-		len--;
-	};
-	buff[i] = '\0';
-	printk("  \"%s\"\n", buff);
-  }
-  printk("    ----\n\n");
+	/* Dump the data. */
+	ptr = (unsigned char *)(ip + 1);
+	addr = 0;
+	len = ntohs(ip->tot_len) - (4 * ip->ihl);
+	while (len > 0)
+	{
+		printk("    %04X: ", addr);
+		for (i = 0; i < 16; i++)
+		{
+			if (len > 0)
+			{
+				printk("%02X ", (*ptr & 0xFF));
+				buff[i] = *ptr++;
+				if (buff[i] < 32 || buff[i] > 126)
+					buff[i] = '.';
+			}
+			else
+			{
+				printk("   ");
+				buff[i] = ' ';
+			}
+			addr++;
+			len--;
+		};
+		buff[i] = '\0';
+		printk("  \"%s\"\n", buff);
+	}
+	printk("    ----\n\n");
 }
 
-
-int
-ip_ioctl(struct sock *sk, int cmd, unsigned long arg)
+int ip_ioctl(struct sock *sk, int cmd, unsigned long arg)
 {
-  switch(cmd) {
+	switch (cmd)
+	{
 	case DDIOCSDBG:
-		return(dbg_ioctl((void *) arg, DBG_IP));
+		return (dbg_ioctl((void *)arg, DBG_IP));
 	default:
-		return(-EINVAL);
-  }
+		return (-EINVAL);
+	}
 }
-
 
 /* these two routines will do routining. */
 static void
@@ -142,27 +147,22 @@ strict_route(struct iphdr *iph, struct options *opt)
 {
 }
 
-
 static void
 loose_route(struct iphdr *iph, struct options *opt)
 {
 }
 
-
 static void
 print_ipprot(struct inet_protocol *ipprot)
 {
-  DPRINTF((DBG_IP, "handler = %X, protocol = %d, copy=%d \n",
-	   ipprot->handler, ipprot->protocol, ipprot->copy));
+	DPRINTF((DBG_IP, "handler = %X, protocol = %d, copy=%d \n",
+			 ipprot->handler, ipprot->protocol, ipprot->copy));
 }
-
 
 /* This routine will check to see if we have lost a gateway. */
-void
-ip_route_check(unsigned long daddr)
+void ip_route_check(unsigned long daddr)
 {
 }
-
 
 #if 0
 /* this routine puts the options at the end of an ip header. */
@@ -177,36 +177,36 @@ build_options(struct iphdr *iph, struct options *opt)
 }
 #endif
 
-
 /* Take an skb, and fill in the MAC header. */
-/* skb£º´ı´´½¨MACÊ×²¿µÄÊı¾İ°ü¡£
- * daddr£ºÊı¾İ°üÏÂÒ»Õ¾IPµØÖ·£¬×¢Òâ²»Í¬ÓÚ×îÖÕ½ÓÊÕ¶ËµØÖ·¡£
- * len£ºIPÊ×²¿¼°Æä¸ºÔØ³¤¶È¡£
- * dev£ºÊı¾İ°ü±¾µØ·¢ËÍÉè±¸½Ó¿Ú¡£
- * saddr£º±¾µØIPµØÖ·¡£Õâ¸ö²ÎÊıÃ»ÓĞ±»Ê¹ÓÃ¡£
+/* skbï¼šå¾…åˆ›å»ºMACé¦–éƒ¨çš„æ•°æ®åŒ…ã€‚
+ * daddrï¼šæ•°æ®åŒ…ä¸‹ä¸€ç«™IPåœ°å€ï¼Œæ³¨æ„ä¸åŒäºæœ€ç»ˆæ¥æ”¶ç«¯åœ°å€ã€‚
+ * lenï¼šIPé¦–éƒ¨åŠå…¶è´Ÿè½½é•¿åº¦ã€‚
+ * devï¼šæ•°æ®åŒ…æœ¬åœ°å‘é€è®¾å¤‡æ¥å£ã€‚
+ * saddrï¼šæœ¬åœ°IPåœ°å€ã€‚è¿™ä¸ªå‚æ•°æ²¡æœ‰è¢«ä½¿ç”¨ã€‚
  */
 static int
 ip_send(struct sk_buff *skb, unsigned long daddr, int len, struct device *dev,
-	unsigned long saddr)
+		unsigned long saddr)
 {
-  unsigned char *ptr;
-  int mac;
+	unsigned char *ptr;
+	int mac;
 
-  ptr = skb->data;
-  mac = 0;
-  /* ±íÊ¾macÊı¾İ°üÒÑ³É¹¦´´½¨ */
-  skb->arp = 1;
-  if (dev->hard_header) {
-	mac = dev->hard_header(ptr, dev, ETH_P_IP, daddr, saddr, len);
-  }
-  if (mac < 0) {
-	mac = -mac;
-	skb->arp = 0;
-  }
-  skb->dev = dev;
-  return(mac);
+	ptr = skb->data;
+	mac = 0;
+	/* è¡¨ç¤ºmacæ•°æ®åŒ…å·²æˆåŠŸåˆ›å»º */
+	skb->arp = 1;
+	if (dev->hard_header)
+	{
+		mac = dev->hard_header(ptr, dev, ETH_P_IP, daddr, saddr, len);
+	}
+	if (mac < 0)
+	{
+		mac = -mac;
+		skb->arp = 0;
+	}
+	skb->dev = dev;
+	return (mac);
 }
-
 
 /*
  * This routine builds the appropriate hardware/IP headers for
@@ -214,263 +214,289 @@ ip_send(struct sk_buff *skb, unsigned long daddr, int len, struct device *dev,
  * protocol knows what it's doing, otherwise it uses the
  * routing/ARP tables to select a device struct.
  */
-/* ¹¹ÔìipĞ­ÒéµÄÊ×²¿ºÍmacĞ­ÒéµÄÊ×²¿
- * º¯Êı·µ»ØÖµÎªmacÊ×²¿ºÍipÊ×²¿×Ü³¤¶È
+/* æ„é€ ipåè®®çš„é¦–éƒ¨å’Œmacåè®®çš„é¦–éƒ¨
+ * å‡½æ•°è¿”å›å€¼ä¸ºmacé¦–éƒ¨å’Œipé¦–éƒ¨æ€»é•¿åº¦
  */
 int ip_build_header(struct sk_buff *skb, unsigned long saddr, unsigned long daddr,
-		struct device **dev, int type, struct options *opt, int len, int tos, int ttl)
+					struct device **dev, int type, struct options *opt, int len, int tos, int ttl)
 {
-  static struct options optmem;
-  struct iphdr *iph;
-  struct rtable *rt;
-  unsigned char *buff;
-  unsigned long raddr;
-  static int count = 0;
-  int tmp;
+	static struct options optmem;
+	struct iphdr *iph;
+	struct rtable *rt;
+	unsigned char *buff;
+	unsigned long raddr;
+	static int count = 0;
+	int tmp;
 
-  if (saddr == 0) 
-  	saddr = my_addr();
-  	
-  DPRINTF((DBG_IP, "ip_build_header (skb=%X, saddr=%X, daddr=%X, *dev=%X,\n"
-	   "                 type=%d, opt=%X, len = %d)\n",
-	   skb, saddr, daddr, *dev, type, opt, len));
-	   
-  buff = skb->data;
+	if (saddr == 0)
+		saddr = my_addr();
 
-  /* See if we need to look up the device. */
-  if (*dev == NULL) {
-	rt = rt_route(daddr, &optmem);
-	if (rt == NULL) 
-		return(-ENETUNREACH);
+	DPRINTF((DBG_IP, "ip_build_header (skb=%X, saddr=%X, daddr=%X, *dev=%X,\n"
+					 "                 type=%d, opt=%X, len = %d)\n",
+			 skb, saddr, daddr, *dev, type, opt, len));
 
-	*dev = rt->rt_dev;
-	if (saddr == 0x0100007FL && daddr != 0x0100007FL) 
-		saddr = rt->rt_dev->pa_addr;
-	raddr = rt->rt_gateway;
+	buff = skb->data;
 
-	DPRINTF((DBG_IP, "ip_build_header: saddr set to %s\n", in_ntoa(saddr)));
-	opt = &optmem;
-  } else {
-	/* We still need the address of the first hop. */
-	rt = rt_route(daddr, &optmem);
-	raddr = (rt == NULL) ? 0 : rt->rt_gateway;
-  }
-  if (raddr == 0)
-  	raddr = daddr;
+	/* See if we need to look up the device. */
+	if (*dev == NULL)
+	{
+		rt = rt_route(daddr, &optmem);
+		if (rt == NULL)
+			return (-ENETUNREACH);
 
-  /* Now build the MAC header. */
-  tmp = ip_send(skb, raddr, len, *dev, saddr);
-  buff += tmp;
-  len -= tmp;
+		*dev = rt->rt_dev;
+		if (saddr == 0x0100007FL && daddr != 0x0100007FL)
+			saddr = rt->rt_dev->pa_addr;
+		raddr = rt->rt_gateway;
 
-  skb->dev = *dev;
-  skb->saddr = saddr;
-  if (skb->sk) skb->sk->saddr = saddr;
+		DPRINTF((DBG_IP, "ip_build_header: saddr set to %s\n", in_ntoa(saddr)));
+		opt = &optmem;
+	}
+	else
+	{
+		/* We still need the address of the first hop. */
+		rt = rt_route(daddr, &optmem);
+		raddr = (rt == NULL) ? 0 : rt->rt_gateway;
+	}
+	if (raddr == 0)
+		raddr = daddr;
 
-  /* Now build the IP header. */
+	/* Now build the MAC header. */
+	tmp = ip_send(skb, raddr, len, *dev, saddr);
+	buff += tmp;
+	len -= tmp;
 
-  /* If we are using IPPROTO_RAW, then we don't need an IP header, since
+	skb->dev = *dev;
+	skb->saddr = saddr;
+	if (skb->sk)
+		skb->sk->saddr = saddr;
+
+	/* Now build the IP header. */
+
+	/* If we are using IPPROTO_RAW, then we don't need an IP header, since
      one is being supplied to us by the user */
 
-  if(type == IPPROTO_RAW) return (tmp);
+	if (type == IPPROTO_RAW)
+		return (tmp);
 
-  iph = (struct iphdr *)buff;
-  iph->version  = 4;
-  iph->tos      = tos;
-  iph->frag_off = 0;
-  iph->ttl      = ttl;
-  iph->daddr    = daddr;
-  iph->saddr    = saddr;
-  iph->protocol = type;
-  iph->ihl      = 5;
-  iph->id       = htons(count++);
+	iph = (struct iphdr *)buff;
+	iph->version = 4;
+	iph->tos = tos;
+	iph->frag_off = 0;
+	iph->ttl = ttl;
+	iph->daddr = daddr;
+	iph->saddr = saddr;
+	iph->protocol = type;
+	iph->ihl = 5;
+	iph->id = htons(count++);
 
-  /* Setup the IP options. */
+	/* Setup the IP options. */
 #ifdef Not_Yet_Avail
-  build_options(iph, opt);
+	build_options(iph, opt);
 #endif
 
-  return(20 + tmp);	/* IP header plus MAC header size */
+	return (20 + tmp); /* IP header plus MAC header size */
 }
 
-
-/* iph£ºIPÊ×²¿
- * opt£º½«½âÎö³öµÄÑ¡ÏîÌîÈë¸Ã²ÎÊıÖ¸ÏòµÄ»º³åÇøÖĞ£¬Õâ¸ö²ÎÊıÊÇÒ»¸öoptionsÀàĞÍµÄ²ÎÊı
+/* iphï¼šIPé¦–éƒ¨
+ * optï¼šå°†è§£æå‡ºçš„é€‰é¡¹å¡«å…¥è¯¥å‚æ•°æŒ‡å‘çš„ç¼“å†²åŒºä¸­ï¼Œè¿™ä¸ªå‚æ•°æ˜¯ä¸€ä¸ªoptionsç±»å‹çš„å‚æ•°
  */
 static int
 do_options(struct iphdr *iph, struct options *opt)
 {
-  unsigned char *buff;
-  int done = 0;
-  int i, len = sizeof(struct iphdr);
+	unsigned char *buff;
+	int done = 0;
+	int i, len = sizeof(struct iphdr);
 
-  /* Zero out the options. */
-  opt->record_route.route_size = 0;
-  opt->loose_route.route_size  = 0;
-  opt->strict_route.route_size = 0;
-  opt->tstamp.ptr              = 0;
-  opt->security                = 0;
-  opt->compartment             = 0;
-  opt->handling                = 0;
-  opt->stream                  = 0;
-  opt->tcc                     = 0;
-  return(0);
+	/* Zero out the options. */
+	opt->record_route.route_size = 0;
+	opt->loose_route.route_size = 0;
+	opt->strict_route.route_size = 0;
+	opt->tstamp.ptr = 0;
+	opt->security = 0;
+	opt->compartment = 0;
+	opt->handling = 0;
+	opt->stream = 0;
+	opt->tcc = 0;
+	return (0);
 
-  /* Advance the pointer to start at the options. */
-  buff = (unsigned char *)(iph + 1);
+	/* Advance the pointer to start at the options. */
+	buff = (unsigned char *)(iph + 1);
 
-  /* Now start the processing. */
-  /* ¿ªÊ¼´¦ÀíÑ¡ÏîÊı¾İ */
-  while (!done && len < iph->ihl*4) switch(*buff) {
-	case IPOPT_END:
-		done = 1;
-		break;
-	case IPOPT_NOOP:
-		buff++;
-		len++;
-		break;
-	case IPOPT_SEC:
-		buff++;
-		if (*buff != 11) return(1);
-		buff++;
-		opt->security = ntohs(*(unsigned short *)buff);
-		buff += 2;
-		opt->compartment = ntohs(*(unsigned short *)buff);
-		buff += 2;
-		opt->handling = ntohs(*(unsigned short *)buff);
-		buff += 2;
-	  	opt->tcc = ((*buff) << 16) + ntohs(*(unsigned short *)(buff+1));
-	  	buff += 3;
-	  	len += 11;
-	  	break;
-	case IPOPT_LSRR:
-		buff++;
-		if ((*buff - 3)% 4 != 0) return(1);
-		len += *buff;
-		opt->loose_route.route_size = (*buff -3)/4;
-		buff++;
-		if (*buff % 4 != 0) return(1);
-		opt->loose_route.pointer = *buff/4 - 1;
-		buff++;
-		buff++;
-		for (i = 0; i < opt->loose_route.route_size; i++) {
-			if(i>=MAX_ROUTE)
-				return(1);
-			opt->loose_route.route[i] = *(unsigned long *)buff;
-			buff += 4;
+	/* Now start the processing. */
+	/* å¼€å§‹å¤„ç†é€‰é¡¹æ•°æ® */
+	while (!done && len < iph->ihl * 4)
+		switch (*buff)
+		{
+		case IPOPT_END:
+			done = 1;
+			break;
+		case IPOPT_NOOP:
+			buff++;
+			len++;
+			break;
+		case IPOPT_SEC:
+			buff++;
+			if (*buff != 11)
+				return (1);
+			buff++;
+			opt->security = ntohs(*(unsigned short *)buff);
+			buff += 2;
+			opt->compartment = ntohs(*(unsigned short *)buff);
+			buff += 2;
+			opt->handling = ntohs(*(unsigned short *)buff);
+			buff += 2;
+			opt->tcc = ((*buff) << 16) + ntohs(*(unsigned short *)(buff + 1));
+			buff += 3;
+			len += 11;
+			break;
+		case IPOPT_LSRR:
+			buff++;
+			if ((*buff - 3) % 4 != 0)
+				return (1);
+			len += *buff;
+			opt->loose_route.route_size = (*buff - 3) / 4;
+			buff++;
+			if (*buff % 4 != 0)
+				return (1);
+			opt->loose_route.pointer = *buff / 4 - 1;
+			buff++;
+			buff++;
+			for (i = 0; i < opt->loose_route.route_size; i++)
+			{
+				if (i >= MAX_ROUTE)
+					return (1);
+				opt->loose_route.route[i] = *(unsigned long *)buff;
+				buff += 4;
+			}
+			break;
+		case IPOPT_SSRR:
+			buff++;
+			if ((*buff - 3) % 4 != 0)
+				return (1);
+			len += *buff;
+			opt->strict_route.route_size = (*buff - 3) / 4;
+			buff++;
+			if (*buff % 4 != 0)
+				return (1);
+			opt->strict_route.pointer = *buff / 4 - 1;
+			buff++;
+			buff++;
+			for (i = 0; i < opt->strict_route.route_size; i++)
+			{
+				if (i >= MAX_ROUTE)
+					return (1);
+				opt->strict_route.route[i] = *(unsigned long *)buff;
+				buff += 4;
+			}
+			break;
+		case IPOPT_RR:
+			buff++;
+			if ((*buff - 3) % 4 != 0)
+				return (1);
+			len += *buff;
+			opt->record_route.route_size = (*buff - 3) / 4;
+			buff++;
+			if (*buff % 4 != 0)
+				return (1);
+			opt->record_route.pointer = *buff / 4 - 1;
+			buff++;
+			buff++;
+			for (i = 0; i < opt->record_route.route_size; i++)
+			{
+				if (i >= MAX_ROUTE)
+					return 1;
+				opt->record_route.route[i] = *(unsigned long *)buff;
+				buff += 4;
+			}
+			break;
+		case IPOPT_SID:
+			len += 4;
+			buff += 2;
+			opt->stream = *(unsigned short *)buff;
+			buff += 2;
+			break;
+		case IPOPT_TIMESTAMP:
+			buff++;
+			len += *buff;
+			if (*buff % 4 != 0)
+				return (1);
+			opt->tstamp.len = *buff / 4 - 1;
+			buff++;
+			if ((*buff - 1) % 4 != 0)
+				return (1);
+			opt->tstamp.ptr = (*buff - 1) / 4;
+			buff++;
+			opt->tstamp.x.full_char = *buff;
+			buff++;
+			for (i = 0; i < opt->tstamp.len; i++)
+			{
+				opt->tstamp.data[i] = *(unsigned long *)buff;
+				buff += 4;
+			}
+			break;
+		default:
+			return (1);
 		}
-		break;
-	case IPOPT_SSRR:
-		buff++;
-		if ((*buff - 3)% 4 != 0) return(1);
-		len += *buff;
-		opt->strict_route.route_size = (*buff -3)/4;
-		buff++;
-		if (*buff % 4 != 0) return(1);
-		opt->strict_route.pointer = *buff/4 - 1;
-		buff++;
-		buff++;
-		for (i = 0; i < opt->strict_route.route_size; i++) {
-			if(i>=MAX_ROUTE)
-				return(1);
-			opt->strict_route.route[i] = *(unsigned long *)buff;
-			buff += 4;
-		}
-		break;
-	case IPOPT_RR:
-		buff++;
-		if ((*buff - 3)% 4 != 0) return(1);
-		len += *buff;
-		opt->record_route.route_size = (*buff -3)/4;
-		buff++;
-		if (*buff % 4 != 0) return(1);
-		opt->record_route.pointer = *buff/4 - 1;
-		buff++;
-		buff++;
-		for (i = 0; i < opt->record_route.route_size; i++) {
-			if(i>=MAX_ROUTE)
-				return 1;
-			opt->record_route.route[i] = *(unsigned long *)buff;
-			buff += 4;
-		}
-		break;
-	case IPOPT_SID:
-		len += 4;
-		buff +=2;
-		opt->stream = *(unsigned short *)buff;
-		buff += 2;
-		break;
-	case IPOPT_TIMESTAMP:
-		buff++;
-		len += *buff;
-		if (*buff % 4 != 0) return(1);
-		opt->tstamp.len = *buff / 4 - 1;
-		buff++;
-		if ((*buff - 1) % 4 != 0) return(1);
-		opt->tstamp.ptr = (*buff-1)/4;
-		buff++;
-		opt->tstamp.x.full_char = *buff;
-		buff++;
-		for (i = 0; i < opt->tstamp.len; i++) {
-			opt->tstamp.data[i] = *(unsigned long *)buff;
-			buff += 4;
-		}
-		break;
-	default:
-		return(1);
-  }
 
-  if (opt->record_route.route_size == 0) {
-	if (opt->strict_route.route_size != 0) {
-		memcpy(&(opt->record_route), &(opt->strict_route),
-					     sizeof(opt->record_route));
-	} else if (opt->loose_route.route_size != 0) {
-		memcpy(&(opt->record_route), &(opt->loose_route),
-					     sizeof(opt->record_route));
+	if (opt->record_route.route_size == 0)
+	{
+		if (opt->strict_route.route_size != 0)
+		{
+			memcpy(&(opt->record_route), &(opt->strict_route),
+				   sizeof(opt->record_route));
+		}
+		else if (opt->loose_route.route_size != 0)
+		{
+			memcpy(&(opt->record_route), &(opt->loose_route),
+				   sizeof(opt->record_route));
+		}
 	}
-  }
 
-  if (opt->strict_route.route_size != 0 &&
-      opt->strict_route.route_size != opt->strict_route.pointer) {
-	strict_route(iph, opt);
-	return(0);
-  }
+	if (opt->strict_route.route_size != 0 &&
+		opt->strict_route.route_size != opt->strict_route.pointer)
+	{
+		strict_route(iph, opt);
+		return (0);
+	}
 
-  if (opt->loose_route.route_size != 0 &&
-      opt->loose_route.route_size != opt->loose_route.pointer) {
-	loose_route(iph, opt);
-	return(0);
-  }
+	if (opt->loose_route.route_size != 0 &&
+		opt->loose_route.route_size != opt->loose_route.pointer)
+	{
+		loose_route(iph, opt);
+		return (0);
+	}
 
-  return(0);
+	return (0);
 }
 
 /* This is a version of ip_compute_csum() optimized for IP headers, which
    always checksum on 4 octet boundaries. */
 
-/* ipĞ£ÑéºÍµÄ¿ìËÙ¼ÆËã */
+/* ipæ ¡éªŒå’Œçš„å¿«é€Ÿè®¡ç®— */
 static inline unsigned short
-ip_fast_csum(unsigned char * buff, int wlen)
+ip_fast_csum(unsigned char *buff, int wlen)
 {
-    unsigned long sum = 0;
+	unsigned long sum = 0;
 
-    if (wlen) {
-    	unsigned long bogus;
-	 __asm__("clc\n"
-		"1:\t"
-		"lodsl\n\t"
-		"adcl %3, %0\n\t"
-		"decl %2\n\t"
-		"jne 1b\n\t"
-		"adcl $0, %0\n\t"
-		"movl %0, %3\n\t"
-		"shrl $16, %3\n\t"
-		"addw %w3, %w0\n\t"
-		"adcw $0, %w0"
-	    : "=r" (sum), "=S" (buff), "=r" (wlen), "=a" (bogus)
-	    : "0"  (sum),  "1" (buff),  "2" (wlen));
-    }
-    return (~sum) & 0xffff;
+	if (wlen)
+	{
+		unsigned long bogus;
+		__asm__("clc\n"
+				"1:\t"
+				"lodsl\n\t"
+				"adcl %3, %0\n\t"
+				"decl %2\n\t"
+				"jne 1b\n\t"
+				"adcl $0, %0\n\t"
+				"movl %0, %3\n\t"
+				"shrl $16, %3\n\t"
+				"addw %w3, %w0\n\t"
+				"adcw $0, %w0"
+				: "=r"(sum), "=S"(buff), "=r"(wlen), "=a"(bogus)
+				: "0"(sum), "1"(buff), "2"(wlen));
+	}
+	return (~sum) & 0xffff;
 }
 
 /*
@@ -478,148 +504,147 @@ ip_fast_csum(unsigned char * buff, int wlen)
  * require anything special (like copying or special headers).
  */
 
-/* ÓÃÓÚ¼ÆËãipĞ£ÑéºÏ */
+/* ç”¨äºè®¡ç®—ipæ ¡éªŒåˆ */
 
 unsigned short
-ip_compute_csum(unsigned char * buff, int len)
+ip_compute_csum(unsigned char *buff, int len)
 {
-  unsigned long sum = 0;
+	unsigned long sum = 0;
 
-  /* Do the first multiple of 4 bytes and convert to 16 bits. */
-  if (len > 3) {
-	__asm__("clc\n"
-	        "1:\t"
-	    	"lodsl\n\t"
-	    	"adcl %%eax, %%ebx\n\t"
-	    	"loop 1b\n\t"
-	    	"adcl $0, %%ebx\n\t"
-	    	"movl %%ebx, %%eax\n\t"
-	    	"shrl $16, %%eax\n\t"
-	    	"addw %%ax, %%bx\n\t"
-	    	"adcw $0, %%bx"
-	        : "=b" (sum) , "=S" (buff)
-	        : "0" (sum), "c" (len >> 2) ,"1" (buff)
-	        : "ax", "cx", "si", "bx" );
-  }
-  if (len & 2) {
-	__asm__("lodsw\n\t"
-	    	"addw %%ax, %%bx\n\t"
-	    	"adcw $0, %%bx"
-	        : "=b" (sum), "=S" (buff)
-	        : "0" (sum), "1" (buff)
-	        : "bx", "ax", "si");
-  }
-  if (len & 1) {
-	__asm__("lodsb\n\t"
-	    	"movb $0, %%ah\n\t"
-	    	"addw %%ax, %%bx\n\t"
-	    	"adcw $0, %%bx"
-	        : "=b" (sum), "=S" (buff)
-	        : "0" (sum), "1" (buff)
-	        : "bx", "ax", "si");
-  }
-  sum =~sum;
-  return(sum & 0xffff);
+	/* Do the first multiple of 4 bytes and convert to 16 bits. */
+	if (len > 3)
+	{
+		__asm__("clc\n"
+				"1:\t"
+				"lodsl\n\t"
+				"adcl %%eax, %%ebx\n\t"
+				"loop 1b\n\t"
+				"adcl $0, %%ebx\n\t"
+				"movl %%ebx, %%eax\n\t"
+				"shrl $16, %%eax\n\t"
+				"addw %%ax, %%bx\n\t"
+				"adcw $0, %%bx"
+				: "=b"(sum), "=S"(buff)
+				: "0"(sum), "c"(len >> 2), "1"(buff)
+				: "ax", "cx", "si", "bx");
+	}
+	if (len & 2)
+	{
+		__asm__("lodsw\n\t"
+				"addw %%ax, %%bx\n\t"
+				"adcw $0, %%bx"
+				: "=b"(sum), "=S"(buff)
+				: "0"(sum), "1"(buff)
+				: "bx", "ax", "si");
+	}
+	if (len & 1)
+	{
+		__asm__("lodsb\n\t"
+				"movb $0, %%ah\n\t"
+				"addw %%ax, %%bx\n\t"
+				"adcw $0, %%bx"
+				: "=b"(sum), "=S"(buff)
+				: "0"(sum), "1"(buff)
+				: "bx", "ax", "si");
+	}
+	sum = ~sum;
+	return (sum & 0xffff);
 }
 
 /* Check the header of an incoming IP datagram.  This version is still used in slhc.c. */
-int
-ip_csum(struct iphdr *iph)
+int ip_csum(struct iphdr *iph)
 {
-  return ip_fast_csum((unsigned char *)iph, iph->ihl);
+	return ip_fast_csum((unsigned char *)iph, iph->ihl);
 }
 
 /* Generate a checksym for an outgoing IP datagram. */
 static void
 ip_send_check(struct iphdr *iph)
 {
-   iph->check = 0;
-   iph->check = ip_fast_csum((unsigned char *)iph, iph->ihl);
+	iph->check = 0;
+	iph->check = ip_fast_csum((unsigned char *)iph, iph->ihl);
 }
 
 /************************ Fragment Handlers From NET2E not yet with tweaks to beat 4K **********************************/
 
-
-/* ipqueue±äÁ¿ÓÃÓÚ´´½¨ipq½á¹¹ÀàĞÍµÄ±äÁ¿£¬ÔÚÇ°ÎÄÖĞÎÒÃÇÒÑ¾­Ìáµ½ipq½á¹¹Ö¸ÏòµÄ¶ÓÁĞÊÇÓÉ
- * ipfrag½á¹¹¹¹³ÉµÄ£¬ Ã¿¸öipq½á¹¹Ö¸ÏòµÄ¶ÓÁĞ¼°Æä±¾Éí±íÊ¾Ò»¸ö±»·ÖÆ¬£¬ µÈ´ıÖØ×éµÄÊı¾İ°ü£»
- * ¶øipqueue±íÊ¾ÕıÔÚÖØ×é¶à¸öÊı¾İ°üµÄÇé¿ö£¬ipqueue±äÁ¿Ö¸ÏòµÄÃ¿¸öipq½á¹¹¶¼±íÊ¾Ò»¸öÕı
- * ÔÚµÈ´ıÖØ×éµÄÊı¾İ°ü,×¢Òâ£ºipqueueÖ¸ÏòµÄipq½á¹¹¶ÓÁĞÖĞ£¬µÚÒ»¸öÔªËØµÄprev×Ö¶ÎÖ¸ÏòNULL
+/* ipqueueå˜é‡ç”¨äºåˆ›å»ºipqç»“æ„ç±»å‹çš„å˜é‡ï¼Œåœ¨å‰æ–‡ä¸­æˆ‘ä»¬å·²ç»æåˆ°ipqç»“æ„æŒ‡å‘çš„é˜Ÿåˆ—æ˜¯ç”±
+ * ipfragç»“æ„æ„æˆçš„ï¼Œ æ¯ä¸ªipqç»“æ„æŒ‡å‘çš„é˜Ÿåˆ—åŠå…¶æœ¬èº«è¡¨ç¤ºä¸€ä¸ªè¢«åˆ†ç‰‡ï¼Œ ç­‰å¾…é‡ç»„çš„æ•°æ®åŒ…ï¼›
+ * è€Œipqueueè¡¨ç¤ºæ­£åœ¨é‡ç»„å¤šä¸ªæ•°æ®åŒ…çš„æƒ…å†µï¼Œipqueueå˜é‡æŒ‡å‘çš„æ¯ä¸ªipqç»“æ„éƒ½è¡¨ç¤ºä¸€ä¸ªæ­£
+ * åœ¨ç­‰å¾…é‡ç»„çš„æ•°æ®åŒ…,æ³¨æ„ï¼šipqueueæŒ‡å‘çš„ipqç»“æ„é˜Ÿåˆ—ä¸­ï¼Œç¬¬ä¸€ä¸ªå…ƒç´ çš„prevå­—æ®µæŒ‡å‘NULL
  */
 
-static struct ipq *ipqueue = NULL;		/* IP fragment queue	*/
- /* Create a new fragment entry. */
- 
-/* ip_frag_createº¯ÊıÓÃÓÚ´´½¨Ò»¸öĞÂµÄipfrag½á¹¹ÓÃÓÚ±íÊ¾ĞÂ½ÓÊÕµ½µÄ·ÖÆ¬Êı¾İ°ü¡£½áºÏ
- * ipfrag½á¹¹¶¨Òå£¬¸Ãº¯ÊıÊµÏÖ·Ç³£Ã÷ÏÔ£¬ÎŞĞè¶à×öËµÃ÷¡£ĞèÒª×¢ÒâµÄÊÇµ÷ÓÃ¸Ãº¯ÊıµÄÆäËûº¯
- * Êı¶ÔÏà¹Ø´«Èë²ÎÊıµÄÉèÖÃ¡£
- */ 
+static struct ipq *ipqueue = NULL; /* IP fragment queue	*/
+								   /* Create a new fragment entry. */
+
+/* ip_frag_createå‡½æ•°ç”¨äºåˆ›å»ºä¸€ä¸ªæ–°çš„ipfragç»“æ„ç”¨äºè¡¨ç¤ºæ–°æ¥æ”¶åˆ°çš„åˆ†ç‰‡æ•°æ®åŒ…ã€‚ç»“åˆ
+ * ipfragç»“æ„å®šä¹‰ï¼Œè¯¥å‡½æ•°å®ç°éå¸¸æ˜æ˜¾ï¼Œæ— éœ€å¤šåšè¯´æ˜ã€‚éœ€è¦æ³¨æ„çš„æ˜¯è°ƒç”¨è¯¥å‡½æ•°çš„å…¶ä»–å‡½
+ * æ•°å¯¹ç›¸å…³ä¼ å…¥å‚æ•°çš„è®¾ç½®ã€‚
+ */
 static struct ipfrag *ip_frag_create(int offset, int end, struct sk_buff *skb, unsigned char *ptr)
 {
-   	struct ipfrag *fp;
- 
-   	fp = (struct ipfrag *) kmalloc(sizeof(struct ipfrag), GFP_ATOMIC);
-   	if (fp == NULL) 
-   	{
-	 	printk("IP: frag_create: no memory left !\n");
-	 	return(NULL);
-   	}
-  	memset(fp, 0, sizeof(struct ipfrag));
+	struct ipfrag *fp;
 
-        /* Fill in the structure. */
+	fp = (struct ipfrag *)kmalloc(sizeof(struct ipfrag), GFP_ATOMIC);
+	if (fp == NULL)
+	{
+		printk("IP: frag_create: no memory left !\n");
+		return (NULL);
+	}
+	memset(fp, 0, sizeof(struct ipfrag));
+
+	/* Fill in the structure. */
 	fp->offset = offset;
 	fp->end = end;
 	fp->len = end - offset;
 	fp->skb = skb;
 	fp->ptr = ptr;
- 
-	return(fp);
+
+	return (fp);
 }
- 
- 
+
 /*
  * Find the correct entry in the "incomplete datagrams" queue for
  * this IP datagram, and return the queue entry address if found.
  */
-/* ÔÚ½ÓÊÕµ½Ò»¸öĞÂµÄ·ÖÆ¬Êı¾İ°üºó£¬ÄÚºËÍ¨¹ıµ÷ÓÃip_findº¯Êı²éÑ¯¸Ã·ÖÆ¬Êı¾İ°üËù¶ÔÓ¦µÄ
- * ipfrag¶ÓÁĞ£¬Õâ¸ö¶ÓÁĞµÄÍ·²¿ÓĞÒ»¸öipq½á¹¹ÀàĞÍÖ¸Ïò£¬¾ßÌåÇë²Î¿¼ÉÏÍ¼¡£ip_findº¯ÊıÊäÈë
- * µÄ²ÎÊıÊÇ±»½ÓÊÕ·ÖÆ¬Êı¾İ°üµÄIPÊ×²¿£¬Í¨¹ı¶ÔIPÊ×²¿ÖĞ±êÊ¶·û×Ö¶Î£¬Ô´£¬Ä¿µÄIPµØÖ·×Ö¶ÎÒÔ
- * ¼°ÉÏ²ãĞ­Òé×Ö¶Î½øĞĞ±È½Ï£¬·µ»ØÏàÓ¦µÄipq½á¹¹¡£×¢Òâ540ĞĞ½«¶¨Ê±Æ÷ÇåÁã£¬µ÷ÓÃip_findº¯
- * ÊıµÄÆäËûº¯Êı»áÏàÓ¦µÄ¶Ô¶¨Ê±Æ÷½øĞĞ½øÒ»²½µÄ´¦Àí¡£ËùÒÔ540ĞĞ´úÂë²¢·ÇÊ®·ÖÖØÒª¡£Ã»ÓĞÒ²
- * ¿ÉÒÔ£¬ÏÂÃæÔÚ·ÖÎöµ½ip_defragº¯ÊıÊ±£¬¶ÁÕß¼´»á¿´µ½ÕâÒ»µã¡£
+/* åœ¨æ¥æ”¶åˆ°ä¸€ä¸ªæ–°çš„åˆ†ç‰‡æ•°æ®åŒ…åï¼Œå†…æ ¸é€šè¿‡è°ƒç”¨ip_findå‡½æ•°æŸ¥è¯¢è¯¥åˆ†ç‰‡æ•°æ®åŒ…æ‰€å¯¹åº”çš„
+ * ipfragé˜Ÿåˆ—ï¼Œè¿™ä¸ªé˜Ÿåˆ—çš„å¤´éƒ¨æœ‰ä¸€ä¸ªipqç»“æ„ç±»å‹æŒ‡å‘ï¼Œå…·ä½“è¯·å‚è€ƒä¸Šå›¾ã€‚ip_findå‡½æ•°è¾“å…¥
+ * çš„å‚æ•°æ˜¯è¢«æ¥æ”¶åˆ†ç‰‡æ•°æ®åŒ…çš„IPé¦–éƒ¨ï¼Œé€šè¿‡å¯¹IPé¦–éƒ¨ä¸­æ ‡è¯†ç¬¦å­—æ®µï¼Œæºï¼Œç›®çš„IPåœ°å€å­—æ®µä»¥
+ * åŠä¸Šå±‚åè®®å­—æ®µè¿›è¡Œæ¯”è¾ƒï¼Œè¿”å›ç›¸åº”çš„ipqç»“æ„ã€‚æ³¨æ„540è¡Œå°†å®šæ—¶å™¨æ¸…é›¶ï¼Œè°ƒç”¨ip_findå‡½
+ * æ•°çš„å…¶ä»–å‡½æ•°ä¼šç›¸åº”çš„å¯¹å®šæ—¶å™¨è¿›è¡Œè¿›ä¸€æ­¥çš„å¤„ç†ã€‚æ‰€ä»¥540è¡Œä»£ç å¹¶éååˆ†é‡è¦ã€‚æ²¡æœ‰ä¹Ÿ
+ * å¯ä»¥ï¼Œä¸‹é¢åœ¨åˆ†æåˆ°ip_defragå‡½æ•°æ—¶ï¼Œè¯»è€…å³ä¼šçœ‹åˆ°è¿™ä¸€ç‚¹ã€‚
  */
 static struct ipq *ip_find(struct iphdr *iph)
 {
 	struct ipq *qp;
 	struct ipq *qplast;
- 
+
 	cli();
 	qplast = NULL;
-	for(qp = ipqueue; qp != NULL; qplast = qp, qp = qp->next) 
+	for (qp = ipqueue; qp != NULL; qplast = qp, qp = qp->next)
 	{
-	    /* ×¢ÒâÕâÀïµÄÅĞ¶ÏÌõ¼ş */
- 		if (iph->id== qp->iph->id && iph->saddr == qp->iph->saddr &&
-			iph->daddr == qp->iph->daddr && iph->protocol == qp->iph->protocol) 
+		/* æ³¨æ„è¿™é‡Œçš„åˆ¤æ–­æ¡ä»¶ */
+		if (iph->id == qp->iph->id && iph->saddr == qp->iph->saddr &&
+			iph->daddr == qp->iph->daddr && iph->protocol == qp->iph->protocol)
 		{
-			del_timer(&qp->timer);	/* So it doesnt vanish on us. The timer will be reset anyway */
- 			sti();
- 			return(qp);
- 		}
-   	}
+			del_timer(&qp->timer); /* So it doesnt vanish on us. The timer will be reset anyway */
+			sti();
+			return (qp);
+		}
+	}
 	sti();
-	return(NULL);
+	return (NULL);
 }
- 
- 
+
 /*
  * Remove an entry from the "incomplete datagrams" queue, either
  * because we completed, reassembled and processed it, or because
  * it timed out.
  */
 
-/* ÊÍ·ÅipqÖĞ¼äµÄÒ»¸ö½ÚµãÒÔ¼°½Úµã¶ÔÓ¦µÄstruct ipfragÁ´±í 
- * ip_free¶ÔÓÉÒ»¸öipqÖ¸ÏòµÄ·ÖÆ¬¶ÓÁĞÖĞ¸÷·ÖÆ¬½øĞĞÊÍ·Å¡£²ÎÊıqp¼´±íÊ¾Õâ¸öipq½á¹¹¡£ÊÍ·Å
- * µÄÔ­Òò¿ÉÄÜÒòÎªËùÓĞ·ÖÆ¬¶¼ÒÑµ½´ï£¬ ¶øÇÒÒÑ¾­Íê³É·ÖÆ¬ÖØ×é£¬ »òÕßÊÇÔÚ¶¨Ê±Æ÷µ½ÆÚÖ®Ç°Ã»ÓĞ
- * ½ÓÊÕµ½ĞèÒªµÄÆäËû·ÖÆ¬Êı¾İ°ü£¨¼´¼«ÓĞ¿ÉÄÜ·¢Éú·ÖÆ¬Êı¾İ°ü¶ªÊ§
+/* é‡Šæ”¾ipqä¸­é—´çš„ä¸€ä¸ªèŠ‚ç‚¹ä»¥åŠèŠ‚ç‚¹å¯¹åº”çš„struct ipfragé“¾è¡¨ 
+ * ip_freeå¯¹ç”±ä¸€ä¸ªipqæŒ‡å‘çš„åˆ†ç‰‡é˜Ÿåˆ—ä¸­å„åˆ†ç‰‡è¿›è¡Œé‡Šæ”¾ã€‚å‚æ•°qpå³è¡¨ç¤ºè¿™ä¸ªipqç»“æ„ã€‚é‡Šæ”¾
+ * çš„åŸå› å¯èƒ½å› ä¸ºæ‰€æœ‰åˆ†ç‰‡éƒ½å·²åˆ°è¾¾ï¼Œ è€Œä¸”å·²ç»å®Œæˆåˆ†ç‰‡é‡ç»„ï¼Œ æˆ–è€…æ˜¯åœ¨å®šæ—¶å™¨åˆ°æœŸä¹‹å‰æ²¡æœ‰
+ * æ¥æ”¶åˆ°éœ€è¦çš„å…¶ä»–åˆ†ç‰‡æ•°æ®åŒ…ï¼ˆå³ææœ‰å¯èƒ½å‘ç”Ÿåˆ†ç‰‡æ•°æ®åŒ…ä¸¢å¤±
  */
 static void ip_free(struct ipq *qp)
 {
@@ -627,93 +652,91 @@ static void ip_free(struct ipq *qp)
 	struct ipfrag *xp;
 
 	/* Stop the timer for this entry. */
-/*	printk("ip_free\n");*/
+	/*	printk("ip_free\n");*/
 	del_timer(&qp->timer);
 
 	/* Remove this entry from the "incomplete datagrams" queue. */
 	cli();
-    /* Èç¹ûqp->prevÎªNULL,ÔòËµÃ÷ÊÍ·ÅµÄÊÇipqueueÖ¸ÏòµÄÕâ¸ö½Úµã */
-	if (qp->prev == NULL) 
+	/* å¦‚æœqp->prevä¸ºNULL,åˆ™è¯´æ˜é‡Šæ”¾çš„æ˜¯ipqueueæŒ‡å‘çš„è¿™ä¸ªèŠ‚ç‚¹ */
+	if (qp->prev == NULL)
 	{
-	 	ipqueue = qp->next;
-	 	if (ipqueue != NULL) 
-	 		ipqueue->prev = NULL;
-   	} 
-   	else 
-   	{
-   	    /* ½«qp´ÓË«ÏòÁ´±íµ±ÖĞÉ¾³ı */
- 		qp->prev->next = qp->next;
- 		if (qp->next != NULL) 
- 			qp->next->prev = qp->prev;
-   	}
- 
-   	/* Release all fragment data. */
-/*   	printk("ip_free: kill frag data\n");*/
-   	fp = qp->fragments;
-   	while (fp != NULL) 
-   	{
- 		xp = fp->next;
- 		IS_SKB(fp->skb);
- 		kfree_skb(fp->skb,FREE_READ);
- 		kfree_s(fp, sizeof(struct ipfrag));
- 		fp = xp;
-   	}
-   	
-/*   	printk("ip_free: cleanup\n");*/
- 
-   	/* Release the MAC header. */
-   	kfree_s(qp->mac, qp->maclen);
- 
-   	/* Release the IP header. */
-   	kfree_s(qp->iph, qp->ihlen + 8);
- 
-   	/* Finally, release the queue descriptor itself. */
-   	kfree_s(qp, sizeof(struct ipq));
-/*   	printk("ip_free:done\n");*/
-   	sti();
- }
- 
- 
- /* Oops- a fragment queue timed out.  Kill it and send an ICMP reply. */
+		ipqueue = qp->next;
+		if (ipqueue != NULL)
+			ipqueue->prev = NULL;
+	}
+	else
+	{
+		/* å°†qpä»åŒå‘é“¾è¡¨å½“ä¸­åˆ é™¤ */
+		qp->prev->next = qp->next;
+		if (qp->next != NULL)
+			qp->next->prev = qp->prev;
+	}
 
-/* ¶ÔÓÚÊı¾İ°üÖØ×éÄÚºËÉèÖÃÓĞÒ»¸ö¶¨Ê±Æ÷£¬ Èç¹û¶¨Ê±Æ÷µ½ÆÚÕâ¶ÎÊ±¼ä¼ä¸ôÄÚ£¬
- * Ã»ÓĞ½ÓÊÕµ½ÆäËûÊı¾İ°ü£¬ ¾Í±íÊ¾¿ÉÄÜ·ÖÆ¬Êı¾İ°ü´«Êä³öÏÖÎÊÌâ£¬ ÎÒÃÇ²»ÄÜÓÀ¾ÃµÈ´ıÒ»¸ö¿ÉÄÜ
- * ÓÀÔ¶ÎŞ·¨µ½´ïµÄ·ÖÆ¬Êı¾İ°ü£¬ËùÒÔÈç¹û¶¨Ê±Æ÷³¬Ê±£¬¾Í¶Ô·ÖÆ¬Êı¾İ°ü¶ÓÁĞ½øĞĞÊÍ·Å¡£ÒÔ·ÀÏµ
- * Í³×ÊÔ´£¨±»·ÖÆ¬Ê¹ÓÃµÄÄÚ´æ¿Õ¼äµÈ£©±»ÓÀ¾Ã±£Áô£¬´Ó¶øÔì³É×ÊÔ´²»¿ÉÓÃ¡£¶øÃ¿µ±½ÓÊÕµ½Ò»¸ö
- * ĞÂµÄ·ÖÆ¬Êı¾İ°üºó£¬¶¼»á¶Ô¶¨Ê±Æ÷½øĞĞÖØÖÃ¡£»»¾ä»°Ëµ£¬Èç¹û·ÖÆ¬ÔÚ¹æ¶¨µÄÊ±¼äÄÚµ½´ï£¬ÊÇ
- * ²»»á·¢Éú¶¨Ê±Æ÷³¬Ê±ÊÂ¼şµÄ¡£Ò»µ©·¢Éú¶¨Ê±Æ÷³¬Ê±ÊÂ¼ş£¬¾Íµ÷ÓÃip_expireº¯Êı½øĞĞ´¦Àí£¬
- * ¶ÔÄ¿Ç°½ÓÊÕµ½µÄ·ÖÆ¬Êı¾İ°ü½øĞĞÊÍ·Å£¬ ´Ó¶øÊÍ·Å±íÊ¾ÕâĞ©·ÖÆ¬ËùÊ¹ÓÃµÄÄÚ´æ¿Õ¼ä¡£ ¾ßÌåµÄÊÍ
- * ·Å¹¤×÷ÊÇÍ¨¹ıµ÷ÓÃip_freeº¯ÊıÍê³ÉµÄ¡£ 606-608ĞĞ´úÂë·¢ËÍÒ»¸öICMP´íÎó±¨ÎÄ£¬ ±íÊ¾·ÖÆ¬Êı
- * ¾İ°üÖØ×é³¬Ê±¡£
- * Ã¿¸öipq½á¹¹¶ÔÓ¦Ò»¸ö´øÖØ×éµÄ·ÖÆ¬Êı¾İ°ü¶ÓÁĞÒÔ¼°Ïà¹Ø¸¨Öú¹¤¾ß£¬Èç¶¨Ê±Æ÷£¬ËùÒÔ¶¨Ê±Æ÷
- * µÄÉèÖÃÊÇÔÚipq½á¹¹ÖĞÍê³ÉµÄ£¬ ÕâÒ»µãÒ²¿ÉÒÔ´Óipq½á¹¹µÄ¶¨Òå¿´³ö£¬ ¶øÇÒÎÒÃÇÖªµÀÃ¿µ±½ÓÊÕ
- * µ½Ò»¸öĞÂµÄ·ÖÆ¬Êı¾İ°ü£¬¸Ã¶¨Ê±Æ÷¶¼»á±»ÖØÖÃ£¬Ö±µ½½ÓÊÕµ½ËùÓĞµÄ·ÖÆ¬¡£µ«ÊÇ¶¨Ê±Æ÷µÄÉèÖÃ
- * ÊÇÔÚºÎ´¦Íê³ÉµÄÄØ£¿ÏÂÃæ½éÉÜµÄip_createº¯Êı½«¸ø³ö´ğ°¸¡£ ip_createº¯ÊıÓÃÓÚ×î³õ½ÓÊÕµ½
- * Ò»¸ö·ÖÆ¬Êı¾İ°üÊ±£¬´´½¨Ò»¸öipq½á¹¹À´¶Ô½«Òªµ½´ïµÄÆäËû·ÖÆ¬½øĞĞ»º´æ£¬¶¨Ê±Æ÷µÄÉèÖÃ¼´
- * ÔÚ¸Ãº¯ÊıÖĞ½øĞĞ
+	/* Release all fragment data. */
+	/*   	printk("ip_free: kill frag data\n");*/
+	fp = qp->fragments;
+	while (fp != NULL)
+	{
+		xp = fp->next;
+		IS_SKB(fp->skb);
+		kfree_skb(fp->skb, FREE_READ);
+		kfree_s(fp, sizeof(struct ipfrag));
+		fp = xp;
+	}
+
+	/*   	printk("ip_free: cleanup\n");*/
+
+	/* Release the MAC header. */
+	kfree_s(qp->mac, qp->maclen);
+
+	/* Release the IP header. */
+	kfree_s(qp->iph, qp->ihlen + 8);
+
+	/* Finally, release the queue descriptor itself. */
+	kfree_s(qp, sizeof(struct ipq));
+	/*   	printk("ip_free:done\n");*/
+	sti();
+}
+
+/* Oops- a fragment queue timed out.  Kill it and send an ICMP reply. */
+
+/* å¯¹äºæ•°æ®åŒ…é‡ç»„å†…æ ¸è®¾ç½®æœ‰ä¸€ä¸ªå®šæ—¶å™¨ï¼Œ å¦‚æœå®šæ—¶å™¨åˆ°æœŸè¿™æ®µæ—¶é—´é—´éš”å†…ï¼Œ
+ * æ²¡æœ‰æ¥æ”¶åˆ°å…¶ä»–æ•°æ®åŒ…ï¼Œ å°±è¡¨ç¤ºå¯èƒ½åˆ†ç‰‡æ•°æ®åŒ…ä¼ è¾“å‡ºç°é—®é¢˜ï¼Œ æˆ‘ä»¬ä¸èƒ½æ°¸ä¹…ç­‰å¾…ä¸€ä¸ªå¯èƒ½
+ * æ°¸è¿œæ— æ³•åˆ°è¾¾çš„åˆ†ç‰‡æ•°æ®åŒ…ï¼Œæ‰€ä»¥å¦‚æœå®šæ—¶å™¨è¶…æ—¶ï¼Œå°±å¯¹åˆ†ç‰‡æ•°æ®åŒ…é˜Ÿåˆ—è¿›è¡Œé‡Šæ”¾ã€‚ä»¥é˜²ç³»
+ * ç»Ÿèµ„æºï¼ˆè¢«åˆ†ç‰‡ä½¿ç”¨çš„å†…å­˜ç©ºé—´ç­‰ï¼‰è¢«æ°¸ä¹…ä¿ç•™ï¼Œä»è€Œé€ æˆèµ„æºä¸å¯ç”¨ã€‚è€Œæ¯å½“æ¥æ”¶åˆ°ä¸€ä¸ª
+ * æ–°çš„åˆ†ç‰‡æ•°æ®åŒ…åï¼Œéƒ½ä¼šå¯¹å®šæ—¶å™¨è¿›è¡Œé‡ç½®ã€‚æ¢å¥è¯è¯´ï¼Œå¦‚æœåˆ†ç‰‡åœ¨è§„å®šçš„æ—¶é—´å†…åˆ°è¾¾ï¼Œæ˜¯
+ * ä¸ä¼šå‘ç”Ÿå®šæ—¶å™¨è¶…æ—¶äº‹ä»¶çš„ã€‚ä¸€æ—¦å‘ç”Ÿå®šæ—¶å™¨è¶…æ—¶äº‹ä»¶ï¼Œå°±è°ƒç”¨ip_expireå‡½æ•°è¿›è¡Œå¤„ç†ï¼Œ
+ * å¯¹ç›®å‰æ¥æ”¶åˆ°çš„åˆ†ç‰‡æ•°æ®åŒ…è¿›è¡Œé‡Šæ”¾ï¼Œ ä»è€Œé‡Šæ”¾è¡¨ç¤ºè¿™äº›åˆ†ç‰‡æ‰€ä½¿ç”¨çš„å†…å­˜ç©ºé—´ã€‚ å…·ä½“çš„é‡Š
+ * æ”¾å·¥ä½œæ˜¯é€šè¿‡è°ƒç”¨ip_freeå‡½æ•°å®Œæˆçš„ã€‚ 606-608è¡Œä»£ç å‘é€ä¸€ä¸ªICMPé”™è¯¯æŠ¥æ–‡ï¼Œ è¡¨ç¤ºåˆ†ç‰‡æ•°
+ * æ®åŒ…é‡ç»„è¶…æ—¶ã€‚
+ * æ¯ä¸ªipqç»“æ„å¯¹åº”ä¸€ä¸ªå¸¦é‡ç»„çš„åˆ†ç‰‡æ•°æ®åŒ…é˜Ÿåˆ—ä»¥åŠç›¸å…³è¾…åŠ©å·¥å…·ï¼Œå¦‚å®šæ—¶å™¨ï¼Œæ‰€ä»¥å®šæ—¶å™¨
+ * çš„è®¾ç½®æ˜¯åœ¨ipqç»“æ„ä¸­å®Œæˆçš„ï¼Œ è¿™ä¸€ç‚¹ä¹Ÿå¯ä»¥ä»ipqç»“æ„çš„å®šä¹‰çœ‹å‡ºï¼Œ è€Œä¸”æˆ‘ä»¬çŸ¥é“æ¯å½“æ¥æ”¶
+ * åˆ°ä¸€ä¸ªæ–°çš„åˆ†ç‰‡æ•°æ®åŒ…ï¼Œè¯¥å®šæ—¶å™¨éƒ½ä¼šè¢«é‡ç½®ï¼Œç›´åˆ°æ¥æ”¶åˆ°æ‰€æœ‰çš„åˆ†ç‰‡ã€‚ä½†æ˜¯å®šæ—¶å™¨çš„è®¾ç½®
+ * æ˜¯åœ¨ä½•å¤„å®Œæˆçš„å‘¢ï¼Ÿä¸‹é¢ä»‹ç»çš„ip_createå‡½æ•°å°†ç»™å‡ºç­”æ¡ˆã€‚ ip_createå‡½æ•°ç”¨äºæœ€åˆæ¥æ”¶åˆ°
+ * ä¸€ä¸ªåˆ†ç‰‡æ•°æ®åŒ…æ—¶ï¼Œåˆ›å»ºä¸€ä¸ªipqç»“æ„æ¥å¯¹å°†è¦åˆ°è¾¾çš„å…¶ä»–åˆ†ç‰‡è¿›è¡Œç¼“å­˜ï¼Œå®šæ—¶å™¨çš„è®¾ç½®å³
+ * åœ¨è¯¥å‡½æ•°ä¸­è¿›è¡Œ
  */
 static void ip_expire(unsigned long arg)
 {
-   	struct ipq *qp;
- 
-   	qp = (struct ipq *)arg;
-   	DPRINTF((DBG_IP, "IP: queue_expire: fragment queue 0x%X timed out!\n", qp));
- 
-   	/* Send an ICMP "Fragment Reassembly Timeout" message. */
+	struct ipq *qp;
+
+	qp = (struct ipq *)arg;
+	DPRINTF((DBG_IP, "IP: queue_expire: fragment queue 0x%X timed out!\n", qp));
+
+	/* Send an ICMP "Fragment Reassembly Timeout" message. */
 #if 0   	
    	icmp_send(qp->iph->ip_src.s_addr, ICMP_TIME_EXCEEDED,
  		    ICMP_EXC_FRAGTIME, qp->iph);
-#endif 		 
- 	if(qp->fragments!=NULL)
-        /* ·¢ËÍÒ»¸ö±¨´íµÄ±¨ÎÄ */
- 		icmp_send(qp->fragments->skb,ICMP_TIME_EXCEEDED,
- 				ICMP_EXC_FRAGTIME, qp->dev);
- 
-   	/* Nuke the fragment queue. */
+#endif
+	if (qp->fragments != NULL)
+		/* å‘é€ä¸€ä¸ªæŠ¥é”™çš„æŠ¥æ–‡ */
+		icmp_send(qp->fragments->skb, ICMP_TIME_EXCEEDED,
+				  ICMP_EXC_FRAGTIME, qp->dev);
+
+	/* Nuke the fragment queue. */
 	ip_free(qp);
 }
- 
- 
+
 /*
  * Add an entry to the 'ipq' queue for a newly received IP datagram.
  * We will (hopefully :-) receive all other fragments of this datagram
@@ -721,174 +744,171 @@ static void ip_expire(unsigned long arg)
  * will insert the received fragments at their respective positions.
  */
 
-/* µ±IPĞ­ÒéÄ£¿é¼ì²éµ½½ÓÊÕµ½ÁËÒ»¸ö·ÖÆ¬Êı¾İ°ü£¬ ¶øÇÒÉĞÎŞ¶ÔÓ¦µÄipq½á¹¹£¬ Ôòµ÷ÓÃip_create
- * º¯Êı´´½¨Ò»¸öipq½á¹¹ÓÃÓÚ´ËºóµÄ·ÖÆ¬Êı¾İ°ü»º´æ¡£²ÎÊıskb±íÊ¾½ÓÊÕµ½µÄ·ÖÆ¬Êı¾İ°ü£¬iph
- * ±íÊ¾·ÖÆ¬Êı¾İ°üµÄIPÊ×²¿£¬dev±íÊ¾½ÓÊÕ¸Ã·ÖÆ¬Êı¾İ°üµÄÍøÂçÉè±¸¡£
+/* å½“IPåè®®æ¨¡å—æ£€æŸ¥åˆ°æ¥æ”¶åˆ°äº†ä¸€ä¸ªåˆ†ç‰‡æ•°æ®åŒ…ï¼Œ è€Œä¸”å°šæ— å¯¹åº”çš„ipqç»“æ„ï¼Œ åˆ™è°ƒç”¨ip_create
+ * å‡½æ•°åˆ›å»ºä¸€ä¸ªipqç»“æ„ç”¨äºæ­¤åçš„åˆ†ç‰‡æ•°æ®åŒ…ç¼“å­˜ã€‚å‚æ•°skbè¡¨ç¤ºæ¥æ”¶åˆ°çš„åˆ†ç‰‡æ•°æ®åŒ…ï¼Œiph
+ * è¡¨ç¤ºåˆ†ç‰‡æ•°æ®åŒ…çš„IPé¦–éƒ¨ï¼Œdevè¡¨ç¤ºæ¥æ”¶è¯¥åˆ†ç‰‡æ•°æ®åŒ…çš„ç½‘ç»œè®¾å¤‡ã€‚
  */
 static struct ipq *ip_create(struct sk_buff *skb, struct iphdr *iph, struct device *dev)
 {
-  	struct ipq *qp;
-  	int maclen;
-  	int ihlen;
+	struct ipq *qp;
+	int maclen;
+	int ihlen;
 
-  	qp = (struct ipq *) kmalloc(sizeof(struct ipq), GFP_ATOMIC);
-  	if (qp == NULL) 
-  	{
+	qp = (struct ipq *)kmalloc(sizeof(struct ipq), GFP_ATOMIC);
+	if (qp == NULL)
+	{
 		printk("IP: create: no memory left !\n");
-		return(NULL);
-  	}
-    
-    /* ¶ÔÊı¾İ½øĞĞÇå¿Õ */
- 	memset(qp, 0, sizeof(struct ipq));
+		return (NULL);
+	}
 
-  	/* Allocate memory for the MAC header. */
-  	maclen = ((unsigned long) iph) - ((unsigned long) skb->data);
-  	qp->mac = (unsigned char *) kmalloc(maclen, GFP_ATOMIC);
-  	if (qp->mac == NULL) 
-  	{
+	/* å¯¹æ•°æ®è¿›è¡Œæ¸…ç©º */
+	memset(qp, 0, sizeof(struct ipq));
+
+	/* Allocate memory for the MAC header. */
+	maclen = ((unsigned long)iph) - ((unsigned long)skb->data);
+	qp->mac = (unsigned char *)kmalloc(maclen, GFP_ATOMIC);
+	if (qp->mac == NULL)
+	{
 		printk("IP: create: no memory left !\n");
 		kfree_s(qp, sizeof(struct ipq));
-		return(NULL);
-  	}
+		return (NULL);
+	}
 
-  	/* Allocate memory for the IP header (plus 8 octects for ICMP). */
-  	ihlen = (iph->ihl * sizeof(unsigned long));
-  	qp->iph = (struct iphdr *) kmalloc(ihlen + 8, GFP_ATOMIC);
-  	if (qp->iph == NULL) 
-  	{
+	/* Allocate memory for the IP header (plus 8 octects for ICMP). */
+	ihlen = (iph->ihl * sizeof(unsigned long));
+	qp->iph = (struct iphdr *)kmalloc(ihlen + 8, GFP_ATOMIC);
+	if (qp->iph == NULL)
+	{
 		printk("IP: create: no memory left !\n");
 		kfree_s(qp->mac, maclen);
 		kfree_s(qp, sizeof(struct ipq));
-		return(NULL);
-  	}
+		return (NULL);
+	}
 
-  	/* Fill in the structure. */
-  	memcpy(qp->mac, skb->data, maclen);
- 	memcpy(qp->iph, iph, ihlen + 8);
-  	qp->len = 0;
-  	qp->ihlen = ihlen;
-  	qp->maclen = maclen;
-  	qp->fragments = NULL;
-  	qp->dev = dev;
-/*  	printk("Protocol = %d\n",qp->iph->protocol);*/
-	
-  	/* Start a timer for this entry. */
-    /* ÉèÖÃ¶ÓÁĞµÄÊ±ÖÓ */
-  	qp->timer.expires = IP_FRAG_TIME;		/* about 30 seconds	*/
-  	qp->timer.data = (unsigned long) qp;		/* pointer to queue	*/
-  	qp->timer.function = ip_expire;			/* expire function	*/
-  	add_timer(&qp->timer);
+	/* Fill in the structure. */
+	memcpy(qp->mac, skb->data, maclen);
+	memcpy(qp->iph, iph, ihlen + 8);
+	qp->len = 0;
+	qp->ihlen = ihlen;
+	qp->maclen = maclen;
+	qp->fragments = NULL;
+	qp->dev = dev;
+	/*  	printk("Protocol = %d\n",qp->iph->protocol);*/
 
-  	/* Add this entry to the queue. */
-    /* ½«ĞÂ´´½¨µÄÒ»¸öipqÌí¼Óµ½ipqueue¶ÓÁĞµÄÊ×²¿ */
-  	qp->prev = NULL;
-  	cli();
-  	qp->next = ipqueue;
-  	if (qp->next != NULL) 
-  		qp->next->prev = qp;
-  	ipqueue = qp;
-  	sti();
-  	return(qp);
+	/* Start a timer for this entry. */
+	/* è®¾ç½®é˜Ÿåˆ—çš„æ—¶é’Ÿ */
+	qp->timer.expires = IP_FRAG_TIME;	/* about 30 seconds	*/
+	qp->timer.data = (unsigned long)qp; /* pointer to queue	*/
+	qp->timer.function = ip_expire;		/* expire function	*/
+	add_timer(&qp->timer);
+
+	/* Add this entry to the queue. */
+	/* å°†æ–°åˆ›å»ºçš„ä¸€ä¸ªipqæ·»åŠ åˆ°ipqueueé˜Ÿåˆ—çš„é¦–éƒ¨ */
+	qp->prev = NULL;
+	cli();
+	qp->next = ipqueue;
+	if (qp->next != NULL)
+		qp->next->prev = qp;
+	ipqueue = qp;
+	sti();
+	return (qp);
 }
- 
- 
- /* See if a fragment queue is complete. */
 
-/* ¼ì²éËùÓĞ·ÖÆ¬ÊÇ·ñÒÑ¾­µ½´ï */
+/* See if a fragment queue is complete. */
+
+/* æ£€æŸ¥æ‰€æœ‰åˆ†ç‰‡æ˜¯å¦å·²ç»åˆ°è¾¾ */
 static int ip_done(struct ipq *qp)
 {
 	struct ipfrag *fp;
 	int offset;
- 
-   	/* Only possible if we received the final fragment. */
-   	if (qp->len == 0) 
-   		return(0);
- 
-   	/* Check all fragment offsets to see if they connect. */
-  	fp = qp->fragments;
-   	offset = 0;
-   	while (fp != NULL) 
-   	{
- 		if (fp->offset > offset) 
- 			return(0);	/* fragment(s) missing */
- 		offset = fp->end;
- 		fp = fp->next;
-   	}
- 
-   	/* All fragments are present. */
-   	return(1);
- }
- 
- 
+
+	/* Only possible if we received the final fragment. */
+	if (qp->len == 0)
+		return (0);
+
+	/* Check all fragment offsets to see if they connect. */
+	fp = qp->fragments;
+	offset = 0;
+	while (fp != NULL)
+	{
+		if (fp->offset > offset)
+			return (0); /* fragment(s) missing */
+		offset = fp->end;
+		fp = fp->next;
+	}
+
+	/* All fragments are present. */
+	return (1);
+}
+
 /* Build a new IP datagram from all its fragments. */
-/* ¸ù¾İÊı¾İ·ÖÆ¬ÖØĞÂ²úÉúÒ»¸öipÊı¾İ±¨£¬Ò²¾ÍÊÇÊı¾İÖØ×é */
+/* æ ¹æ®æ•°æ®åˆ†ç‰‡é‡æ–°äº§ç”Ÿä¸€ä¸ªipæ•°æ®æŠ¥ï¼Œä¹Ÿå°±æ˜¯æ•°æ®é‡ç»„ */
 static struct sk_buff *ip_glue(struct ipq *qp)
 {
 	struct sk_buff *skb;
-   	struct iphdr *iph;
-   	struct ipfrag *fp;
-   	unsigned char *ptr;
-   	int count, len;
- 
-   	/* Allocate a new buffer for the datagram. */
-   	len = sizeof(struct sk_buff)+qp->maclen + qp->ihlen + qp->len;
-   	if ((skb = alloc_skb(len,GFP_ATOMIC)) == NULL) 
-   	{
- 		printk("IP: queue_glue: no memory for glueing queue 0x%X\n", (int) qp);
- 		ip_free(qp);
- 		return(NULL);
-   	}
- 
-   	/* Fill in the basic details. */
-   	skb->len = (len - qp->maclen);
-   	skb->h.raw = skb->data;
-   	skb->free = 1;
- 
-   	/* Copy the original MAC and IP headers into the new buffer. */
-   	ptr = (unsigned char *) skb->h.raw;
-   	memcpy(ptr, ((unsigned char *) qp->mac), qp->maclen);
-/*   	printk("Copied %d bytes of mac header.\n",qp->maclen);*/
-   	ptr += qp->maclen;
-   	memcpy(ptr, ((unsigned char *) qp->iph), qp->ihlen);
-/*   	printk("Copied %d byte of ip header.\n",qp->ihlen);*/
-   	ptr += qp->ihlen;
-   	skb->h.raw += qp->maclen;
-   	
-/*   	printk("Protocol = %d\n",skb->h.iph->protocol);*/
-   	count = 0;
- 
-   	/* Copy the data portions of all fragments into the new buffer. */
-   	fp = qp->fragments;
-   	while(fp != NULL) 
-   	{
-   		if(count+fp->len>skb->len)
-   		{
-   			printk("Invalid fragment list: Fragment over size.\n");
-   			ip_free(qp);
-   			kfree_skb(skb,FREE_WRITE);
-   			return NULL;
-   		}
-/*   		printk("Fragment %d size %d\n",fp->offset,fp->len);*/
- 		memcpy((ptr + fp->offset), fp->ptr, fp->len);
- 		count += fp->len;
- 		fp = fp->next;
-   	}
- 
-   	/* We glued together all fragments, so remove the queue entry. */
-   	ip_free(qp);
- 
-   	/* Done with all fragments. Fixup the new IP header. */
-   	iph = skb->h.iph;
-   	iph->frag_off = 0;
-   	iph->tot_len = htons((iph->ihl * sizeof(unsigned long)) + count);
-   	skb->ip_hdr = iph;
-   	return(skb);
+	struct iphdr *iph;
+	struct ipfrag *fp;
+	unsigned char *ptr;
+	int count, len;
+
+	/* Allocate a new buffer for the datagram. */
+	len = sizeof(struct sk_buff) + qp->maclen + qp->ihlen + qp->len;
+	if ((skb = alloc_skb(len, GFP_ATOMIC)) == NULL)
+	{
+		printk("IP: queue_glue: no memory for glueing queue 0x%X\n", (int)qp);
+		ip_free(qp);
+		return (NULL);
+	}
+
+	/* Fill in the basic details. */
+	skb->len = (len - qp->maclen);
+	skb->h.raw = skb->data;
+	skb->free = 1;
+
+	/* Copy the original MAC and IP headers into the new buffer. */
+	ptr = (unsigned char *)skb->h.raw;
+	memcpy(ptr, ((unsigned char *)qp->mac), qp->maclen);
+	/*   	printk("Copied %d bytes of mac header.\n",qp->maclen);*/
+	ptr += qp->maclen;
+	memcpy(ptr, ((unsigned char *)qp->iph), qp->ihlen);
+	/*   	printk("Copied %d byte of ip header.\n",qp->ihlen);*/
+	ptr += qp->ihlen;
+	skb->h.raw += qp->maclen;
+
+	/*   	printk("Protocol = %d\n",skb->h.iph->protocol);*/
+	count = 0;
+
+	/* Copy the data portions of all fragments into the new buffer. */
+	fp = qp->fragments;
+	while (fp != NULL)
+	{
+		if (count + fp->len > skb->len)
+		{
+			printk("Invalid fragment list: Fragment over size.\n");
+			ip_free(qp);
+			kfree_skb(skb, FREE_WRITE);
+			return NULL;
+		}
+		/*   		printk("Fragment %d size %d\n",fp->offset,fp->len);*/
+		memcpy((ptr + fp->offset), fp->ptr, fp->len);
+		count += fp->len;
+		fp = fp->next;
+	}
+
+	/* We glued together all fragments, so remove the queue entry. */
+	ip_free(qp);
+
+	/* Done with all fragments. Fixup the new IP header. */
+	iph = skb->h.iph;
+	iph->frag_off = 0;
+	iph->tot_len = htons((iph->ihl * sizeof(unsigned long)) + count);
+	skb->ip_hdr = iph;
+	return (skb);
 }
- 
 
 /* Process an incoming IP datagram fragment. */
-/* Èç¹û¸Ãº¯Êı·µ»ØNULL£¬¾Í±íÊ¾·ÖÆ¬Êı¾İ°üÉĞÎ´µ½´ïÍêÕû£¬»¹ÒªµÈ´ıÆäËû·ÖÆ¬
- * µÄ½øÒ»²½µ½´ï 
+/* å¦‚æœè¯¥å‡½æ•°è¿”å›NULLï¼Œå°±è¡¨ç¤ºåˆ†ç‰‡æ•°æ®åŒ…å°šæœªåˆ°è¾¾å®Œæ•´ï¼Œè¿˜è¦ç­‰å¾…å…¶ä»–åˆ†ç‰‡
+ * çš„è¿›ä¸€æ­¥åˆ°è¾¾ 
  */
 static struct sk_buff *ip_defrag(struct iphdr *iph, struct sk_buff *skb, struct device *dev)
 {
@@ -901,140 +921,139 @@ static struct sk_buff *ip_defrag(struct iphdr *iph, struct sk_buff *skb, struct 
 	int i, ihl, end;
 
 	/* Find the entry of this IP datagram in the "incomplete datagrams" queue. */
-   	qp = ip_find(iph);
- 
-   	/* Is this a non-fragmented datagram? */
-   	offset = ntohs(iph->frag_off);
-   	flags = offset & ~IP_OFFSET;
-   	offset &= IP_OFFSET;
-   	if (((flags & IP_MF) == 0) && (offset == 0)) 
-   	{
- 		if (qp != NULL) 
- 			ip_free(qp);	/* Huh? How could this exist?? */
- 		return(skb);
-   	}
-   	offset <<= 3;		/* offset is in 8-byte chunks */
- 
-   	/*
+	qp = ip_find(iph);
+
+	/* Is this a non-fragmented datagram? */
+	offset = ntohs(iph->frag_off);
+	flags = offset & ~IP_OFFSET;
+	offset &= IP_OFFSET;
+	if (((flags & IP_MF) == 0) && (offset == 0))
+	{
+		if (qp != NULL)
+			ip_free(qp); /* Huh? How could this exist?? */
+		return (skb);
+	}
+	offset <<= 3; /* offset is in 8-byte chunks */
+
+	/*
     	 * If the queue already existed, keep restarting its timer as long
    	 * as we still are receiving fragments.  Otherwise, create a fresh
     	 * queue entry.
     	 */
-   	if (qp != NULL) 
-   	{
- 		del_timer(&qp->timer);
- 		qp->timer.expires = IP_FRAG_TIME;	/* about 30 seconds	*/
- 		qp->timer.data = (unsigned long) qp;	/* pointer to queue	*/
- 		qp->timer.function = ip_expire;		/* expire function	*/
- 		add_timer(&qp->timer);
-   	} 
-   	else 
-   	{
- 		if ((qp = ip_create(skb, iph, dev)) == NULL) 
- 			return(NULL);
-   	}
- 
-   	/* Determine the position of this fragment. */
-   	ihl = (iph->ihl * sizeof(unsigned long));
-   	end = offset + ntohs(iph->tot_len) - ihl;
- 
-   	/* Point into the IP datagram 'data' part. */
-   	ptr = skb->data + dev->hard_header_len + ihl;
- 
-   	/* Is this the final fragment? */
-   	if ((flags & IP_MF) == 0) 
-   		qp->len = end;
- 
-   	/*
+	if (qp != NULL)
+	{
+		del_timer(&qp->timer);
+		qp->timer.expires = IP_FRAG_TIME;	/* about 30 seconds	*/
+		qp->timer.data = (unsigned long)qp; /* pointer to queue	*/
+		qp->timer.function = ip_expire;		/* expire function	*/
+		add_timer(&qp->timer);
+	}
+	else
+	{
+		if ((qp = ip_create(skb, iph, dev)) == NULL)
+			return (NULL);
+	}
+
+	/* Determine the position of this fragment. */
+	ihl = (iph->ihl * sizeof(unsigned long));
+	end = offset + ntohs(iph->tot_len) - ihl;
+
+	/* Point into the IP datagram 'data' part. */
+	ptr = skb->data + dev->hard_header_len + ihl;
+
+	/* Is this the final fragment? */
+	if ((flags & IP_MF) == 0)
+		qp->len = end;
+
+	/*
    	 * Find out which fragments are in front and at the back of us
    	 * in the chain of fragments so far.  We must know where to put
    	 * this fragment, right?
    	 */
-   	prev = NULL;
-   	for(next = qp->fragments; next != NULL; next = next->next) 
-   	{
- 		if (next->offset > offset) 
- 			break;	/* bingo! */
- 		prev = next;
-   	}	
- 
-   	/*
+	prev = NULL;
+	for (next = qp->fragments; next != NULL; next = next->next)
+	{
+		if (next->offset > offset)
+			break; /* bingo! */
+		prev = next;
+	}
+
+	/*
    	 * We found where to put this one.
    	 * Check for overlap with preceeding fragment, and, if needed,
    	 * align things so that any overlaps are eliminated.
    	 */
-   	if (prev != NULL && offset < prev->end) 
-   	{
- 		i = prev->end - offset;
- 		offset += i;	/* ptr into datagram */
- 		ptr += i;	/* ptr into fragment data */
- 		DPRINTF((DBG_IP, "IP: defrag: fixed low overlap %d bytes\n", i));
-   	}	
- 
-   	/*
+	if (prev != NULL && offset < prev->end)
+	{
+		i = prev->end - offset;
+		offset += i; /* ptr into datagram */
+		ptr += i;	 /* ptr into fragment data */
+		DPRINTF((DBG_IP, "IP: defrag: fixed low overlap %d bytes\n", i));
+	}
+
+	/*
     	 * Look for overlap with succeeding segments.
     	 * If we can merge fragments, do it.
       	 */
-   
-   	for(; next != NULL; next = tfp) 
-   	{
- 		tfp = next->next;
- 		if (next->offset >= end) 
- 			break;		/* no overlaps at all */
- 
- 		i = end - next->offset;			/* overlap is 'i' bytes */
- 		next->len -= i;				/* so reduce size of	*/
- 		next->offset += i;			/* next fragment	*/
- 		next->ptr += i;
- 		
- 		/* If we get a frag size of <= 0, remove it. */
- 		if (next->len <= 0) 
- 		{
- 			DPRINTF((DBG_IP, "IP: defrag: removing frag 0x%X (len %d)\n",
- 							next, next->len));
- 			if (next->prev != NULL) 
- 				next->prev->next = next->next;
- 		  	else 
- 		  		qp->fragments = next->next;
- 		
- 			if (tfp->next != NULL) 
- 				next->next->prev = next->prev;
- 			
- 			kfree_s(next, sizeof(struct ipfrag));
- 		}
- 		DPRINTF((DBG_IP, "IP: defrag: fixed high overlap %d bytes\n", i));
-   	}
- 
-   	/* Insert this fragment in the chain of fragments. */
-   	tfp = NULL;
-   	tfp = ip_frag_create(offset, end, skb, ptr);
-   	tfp->prev = prev;
-   	tfp->next = next;
-   	if (prev != NULL) 
-   		prev->next = tfp;
-     	else 
-     		qp->fragments = tfp;
-   
-   	if (next != NULL) 
-   		next->prev = tfp;
- 
-   	/*
+
+	for (; next != NULL; next = tfp)
+	{
+		tfp = next->next;
+		if (next->offset >= end)
+			break; /* no overlaps at all */
+
+		i = end - next->offset; /* overlap is 'i' bytes */
+		next->len -= i;			/* so reduce size of	*/
+		next->offset += i;		/* next fragment	*/
+		next->ptr += i;
+
+		/* If we get a frag size of <= 0, remove it. */
+		if (next->len <= 0)
+		{
+			DPRINTF((DBG_IP, "IP: defrag: removing frag 0x%X (len %d)\n",
+					 next, next->len));
+			if (next->prev != NULL)
+				next->prev->next = next->next;
+			else
+				qp->fragments = next->next;
+
+			if (tfp->next != NULL)
+				next->next->prev = next->prev;
+
+			kfree_s(next, sizeof(struct ipfrag));
+		}
+		DPRINTF((DBG_IP, "IP: defrag: fixed high overlap %d bytes\n", i));
+	}
+
+	/* Insert this fragment in the chain of fragments. */
+	tfp = NULL;
+	tfp = ip_frag_create(offset, end, skb, ptr);
+	tfp->prev = prev;
+	tfp->next = next;
+	if (prev != NULL)
+		prev->next = tfp;
+	else
+		qp->fragments = tfp;
+
+	if (next != NULL)
+		next->prev = tfp;
+
+	/*
     	 * OK, so we inserted this new fragment into the chain.
     	 * Check if we now have a full IP datagram which we can
     	 * bump up to the IP layer...
     	 */
 
-    /* ÅĞ¶ÏÊı¾İ·ÖÆ¬ÊÇ·ñÍêÕû£¬Èç¹ûÍêÕû£¬ÔòÖØĞÂÉú³ÉÒ»¸öÊı¾İ±¨²¢·µ»Ø */
-   	if (ip_done(qp)) 
-   	{
- 		skb2 = ip_glue(qp);		/* glue together the fragments */
- 		return(skb2);
-   	}
-   	return(NULL);
- }
- 
- 
- /*
+	/* åˆ¤æ–­æ•°æ®åˆ†ç‰‡æ˜¯å¦å®Œæ•´ï¼Œå¦‚æœå®Œæ•´ï¼Œåˆ™é‡æ–°ç”Ÿæˆä¸€ä¸ªæ•°æ®æŠ¥å¹¶è¿”å› */
+	if (ip_done(qp))
+	{
+		skb2 = ip_glue(qp); /* glue together the fragments */
+		return (skb2);
+	}
+	return (NULL);
+}
+
+/*
   * This IP datagram is too large to be sent in one piece.  Break it up into
   * smaller pieces (each of size equal to the MAC header plus IP header plus
   * a block of the data of the original IP data part) that will yet fit in a
@@ -1042,72 +1061,72 @@ static struct sk_buff *ip_defrag(struct iphdr *iph, struct sk_buff *skb, struct 
   * ip_queue_xmit().  Note that this is recursion, and bad things will happen
   * if this function causes a loop...
   */
- /* º¯Êı¸ºÔğ¶Ô´óµÄÊı¾İ°ü½øĞĞ·ÖÆ¬,Èç¹ûÊÇ±¾µØ·¢ËÍµÄ
-  * Êı¾İ°ü£¬Ôòis_frag²ÎÊı±»ÉèÖÃÎª0£»Èç¹ûÊÇ×ª·¢µÄÊı¾İ°ü£¬Ôòis_frag²ÎÊı±íÊ¾±»×ª·¢Êı¾İ
-  * °üÊÇ·ñ±¾Éí¾ÍÊÇÒ»¸ö·ÖÆ¬
+/* å‡½æ•°è´Ÿè´£å¯¹å¤§çš„æ•°æ®åŒ…è¿›è¡Œåˆ†ç‰‡,å¦‚æœæ˜¯æœ¬åœ°å‘é€çš„
+  * æ•°æ®åŒ…ï¼Œåˆ™is_fragå‚æ•°è¢«è®¾ç½®ä¸º0ï¼›å¦‚æœæ˜¯è½¬å‘çš„æ•°æ®åŒ…ï¼Œåˆ™is_fragå‚æ•°è¡¨ç¤ºè¢«è½¬å‘æ•°æ®
+  * åŒ…æ˜¯å¦æœ¬èº«å°±æ˜¯ä¸€ä¸ªåˆ†ç‰‡
   */
- void ip_fragment(struct sock *sk, struct sk_buff *skb, struct device *dev, int is_frag)
- {
-   	struct iphdr *iph;
-   	unsigned char *raw;
-   	unsigned char *ptr;
-   	struct sk_buff *skb2;
-   	int left, mtu, hlen, len;
-   	int offset;
- 
-   	/* Point into the IP datagram header. */
-   	raw = skb->data;
-   	iph = (struct iphdr *) (raw + dev->hard_header_len);
+void ip_fragment(struct sock *sk, struct sk_buff *skb, struct device *dev, int is_frag)
+{
+	struct iphdr *iph;
+	unsigned char *raw;
+	unsigned char *ptr;
+	struct sk_buff *skb2;
+	int left, mtu, hlen, len;
+	int offset;
+
+	/* Point into the IP datagram header. */
+	raw = skb->data;
+	iph = (struct iphdr *)(raw + dev->hard_header_len);
 
 	skb->ip_hdr = iph;
-	 	
-   	/* Setup starting values. */
-   	hlen = (iph->ihl * sizeof(unsigned long));
-   	left = ntohs(iph->tot_len) - hlen;
-   	hlen += dev->hard_header_len;
-   	mtu = (dev->mtu - hlen);
-   	ptr = (raw + hlen);
- 	
-   	DPRINTF((DBG_IP, "IP: Fragmentation Desired\n"));
-   	DPRINTF((DBG_IP, "    DEV=%s, MTU=%d, LEN=%d SRC=%s",
- 		dev->name, dev->mtu, left, in_ntoa(iph->saddr)));
-   	DPRINTF((DBG_IP, " DST=%s\n", in_ntoa(iph->daddr)));
- 
-   	/* Check for any "DF" flag. */
-        /* Èç¹ûip°ü²»ÔÊĞí·ÖÆ¬£¬ÔòÊ¹ÓÃicmp·¢ËÍ²»¿É·ÖÆ¬´íÎó */
-   	if (ntohs(iph->frag_off) & IP_DF) 
-   	{
- 		DPRINTF((DBG_IP, "IP: Fragmentation Desired, but DF set !\n"));
- 		DPRINTF((DBG_IP, "    DEV=%s, MTU=%d, LEN=%d SRC=%s",
- 			dev->name, dev->mtu, left, in_ntoa(iph->saddr)));
- 		DPRINTF((DBG_IP, " DST=%s\n", in_ntoa(iph->daddr)));
- 
- 		/*
+
+	/* Setup starting values. */
+	hlen = (iph->ihl * sizeof(unsigned long));
+	left = ntohs(iph->tot_len) - hlen;
+	hlen += dev->hard_header_len;
+	mtu = (dev->mtu - hlen);
+	ptr = (raw + hlen);
+
+	DPRINTF((DBG_IP, "IP: Fragmentation Desired\n"));
+	DPRINTF((DBG_IP, "    DEV=%s, MTU=%d, LEN=%d SRC=%s",
+			 dev->name, dev->mtu, left, in_ntoa(iph->saddr)));
+	DPRINTF((DBG_IP, " DST=%s\n", in_ntoa(iph->daddr)));
+
+	/* Check for any "DF" flag. */
+	/* å¦‚æœipåŒ…ä¸å…è®¸åˆ†ç‰‡ï¼Œåˆ™ä½¿ç”¨icmpå‘é€ä¸å¯åˆ†ç‰‡é”™è¯¯ */
+	if (ntohs(iph->frag_off) & IP_DF)
+	{
+		DPRINTF((DBG_IP, "IP: Fragmentation Desired, but DF set !\n"));
+		DPRINTF((DBG_IP, "    DEV=%s, MTU=%d, LEN=%d SRC=%s",
+				 dev->name, dev->mtu, left, in_ntoa(iph->saddr)));
+		DPRINTF((DBG_IP, " DST=%s\n", in_ntoa(iph->daddr)));
+
+		/*
  		 * FIXME:
  		 * We should send an ICMP warning message here!
  		 */
- 		 
- 		icmp_send(skb,ICMP_DEST_UNREACH, ICMP_FRAG_NEEDED, dev); 
- 		return;
-   	}
- 
-   	/* Fragment the datagram. */
+
+		icmp_send(skb, ICMP_DEST_UNREACH, ICMP_FRAG_NEEDED, dev);
+		return;
+	}
+
+	/* Fragment the datagram. */
 	if (is_frag & 2)
-	  offset = (ntohs(iph->frag_off) & 0x1fff) << 3;
+		offset = (ntohs(iph->frag_off) & 0x1fff) << 3;
 	else
-   	  offset = 0;
-        /* ½«Ò»¸ö´óµÄÊı¾İ°ü·Ö¶à¸öÊı¾İ°ü·¢ËÍ */
-   	while(left > 0) 
-   	{
- 		len = left;
-#ifdef OLD 		
- 		if (len+8 > mtu) 
- 			len = (dev->mtu - hlen - 8);
- 		if ((left - len) >= 8) 
- 		{
- 			len /= 8;
- 			len *= 8;
- 		}
+		offset = 0;
+	/* å°†ä¸€ä¸ªå¤§çš„æ•°æ®åŒ…åˆ†å¤šä¸ªæ•°æ®åŒ…å‘é€ */
+	while (left > 0)
+	{
+		len = left;
+#ifdef OLD
+		if (len + 8 > mtu)
+			len = (dev->mtu - hlen - 8);
+		if ((left - len) >= 8)
+		{
+			len /= 8;
+			len *= 8;
+		}
 #else
 		/* IF: it doesn't fit, use 'mtu' - the data space left */
 		if (len > mtu)
@@ -1116,362 +1135,368 @@ static struct sk_buff *ip_defrag(struct iphdr *iph, struct sk_buff *skb, struct 
 		   then align the next start on an eight byte boundary */
 		if (len < left)
 		{
-			len/=8;
-			len*=8;
+			len /= 8;
+			len *= 8;
 		}
-#endif		 		
- 		DPRINTF((DBG_IP,"IP: frag: creating fragment of %d bytes (%d total)\n",
- 							len, len + hlen));
- 
- 		/* Allocate buffer. */
- 		if ((skb2 = alloc_skb(sizeof(struct sk_buff) + len + hlen,GFP_ATOMIC)) == NULL) 
- 		{
- 			printk("IP: frag: no memory for new fragment!\n");
- 			return;
- 		}
- 		skb2->arp = skb->arp;
- 		skb2->free = skb->free;
- 		skb2->len = len + hlen;
- 		skb2->h.raw=(char *) skb2->data;
- 
- 		if (sk) 
- 			sk->wmem_alloc += skb2->mem_len;
- 
- 		/* Copy the packet header into the new buffer. */
- 		memcpy(skb2->h.raw, raw, hlen);
- 
- 		/* Copy a block of the IP datagram. */
- 		memcpy(skb2->h.raw + hlen, ptr, len);
- 		left -= len;
+#endif
+		DPRINTF((DBG_IP, "IP: frag: creating fragment of %d bytes (%d total)\n",
+				 len, len + hlen));
 
-		skb2->h.raw+=dev->hard_header_len; 
- 		/* Fill in the new header fields. */
- 		iph = (struct iphdr *)(skb2->h.raw/*+dev->hard_header_len*/);
- 		iph->frag_off = htons((offset >> 3));
- 		/* Added AC : If we are fragmenting a fragment thats not the
+		/* Allocate buffer. */
+		if ((skb2 = alloc_skb(sizeof(struct sk_buff) + len + hlen, GFP_ATOMIC)) == NULL)
+		{
+			printk("IP: frag: no memory for new fragment!\n");
+			return;
+		}
+		skb2->arp = skb->arp;
+		skb2->free = skb->free;
+		skb2->len = len + hlen;
+		skb2->h.raw = (char *)skb2->data;
+
+		if (sk)
+			sk->wmem_alloc += skb2->mem_len;
+
+		/* Copy the packet header into the new buffer. */
+		memcpy(skb2->h.raw, raw, hlen);
+
+		/* Copy a block of the IP datagram. */
+		memcpy(skb2->h.raw + hlen, ptr, len);
+		left -= len;
+
+		skb2->h.raw += dev->hard_header_len;
+		/* Fill in the new header fields. */
+		iph = (struct iphdr *)(skb2->h.raw /*+dev->hard_header_len*/);
+		iph->frag_off = htons((offset >> 3));
+		/* Added AC : If we are fragmenting a fragment thats not the
  		   last fragment then keep MF on each bit */
- 		if (left > 0 || (is_frag & 1)) 
- 			iph->frag_off |= htons(IP_MF);
- 		ptr += len;
- 		offset += len;
-/* 		printk("Queue frag\n");*/
- 
- 		/* Put this fragment into the sending queue. */
-                /* ·¢ËÍ·ÖÆ¬ºóµÄÃ¿¸öÊı¾İÆ¬ */
- 		ip_queue_xmit(sk, dev, skb2, 1);
-/* 		printk("Queued\n");*/
-   	}
- }
- 
+		if (left > 0 || (is_frag & 1))
+			iph->frag_off |= htons(IP_MF);
+		ptr += len;
+		offset += len;
+		/* 		printk("Queue frag\n");*/
 
+		/* Put this fragment into the sending queue. */
+		/* å‘é€åˆ†ç‰‡åçš„æ¯ä¸ªæ•°æ®ç‰‡ */
+		ip_queue_xmit(sk, dev, skb2, 1);
+		/* 		printk("Queued\n");*/
+	}
+}
 
 #ifdef CONFIG_IP_FORWARD
 
 /* Forward an IP datagram to its next destination. */
-/* skb£º±»×ª·¢Êı¾İ°ü¡£
- * dev£º½ÓÊÕ¸Ã±»×ª·¢Êı¾İ°üµÄÍøÂçÉè±¸¡£º¯Êı½«ÓÃÒÔÅĞ¶ÏÊÇ·ñĞèÒª½øĞĞICMPÖØ¶¨Ïò±¨ÎÄµÄ·¢
- * ËÍ¡£is_frag£º±íÊ¾±»×ª·¢Êı¾İ°üÊÇ·ñÎªÒ»¸ö·ÖÆ¬Êı¾İ°ü£¬ÒÔ¼°·ÖÆ¬Ëù´¦µÄÎ»ÖÃ¡£µ±is_frag&1
- * ÎªÕæÊ±£¬±íÊ¾ÕâÊÇÒ»¸öÎ»ÖÃ´¦ÓÚÖĞ¼äµÄ·ÖÆ¬Êı¾İ°ü£»µ±is_frag&2ÎªÕæÊ±£¬±íÊ¾ÕâÊÇÒ»¸öÎ»
- * ÖÃ´¦ÓÚ×îºóµÄ·ÖÆ¬Êı¾İ°ü£»ÓÉÓÚip_rcvº¯ÊıÊµÏÖµÄÈ±Ïİ£¬Ã»ÓĞ¶ÔµÚÒ»¸ö·ÖÆ¬½øĞĞÅĞ¶Ï£¬ËùÒÔ
- * ´Ë´¦Ò²¾ÍÎŞ·¨±íÊ¾Î»ÖÃ´¦ÓÚ×îÇ°µÄµÚÒ»¸ö·ÖÆ¬Êı¾İ°ü¡£
+/* skbï¼šè¢«è½¬å‘æ•°æ®åŒ…ã€‚
+ * devï¼šæ¥æ”¶è¯¥è¢«è½¬å‘æ•°æ®åŒ…çš„ç½‘ç»œè®¾å¤‡ã€‚å‡½æ•°å°†ç”¨ä»¥åˆ¤æ–­æ˜¯å¦éœ€è¦è¿›è¡ŒICMPé‡å®šå‘æŠ¥æ–‡çš„å‘
+ * é€ã€‚is_fragï¼šè¡¨ç¤ºè¢«è½¬å‘æ•°æ®åŒ…æ˜¯å¦ä¸ºä¸€ä¸ªåˆ†ç‰‡æ•°æ®åŒ…ï¼Œä»¥åŠåˆ†ç‰‡æ‰€å¤„çš„ä½ç½®ã€‚å½“is_frag&1
+ * ä¸ºçœŸæ—¶ï¼Œè¡¨ç¤ºè¿™æ˜¯ä¸€ä¸ªä½ç½®å¤„äºä¸­é—´çš„åˆ†ç‰‡æ•°æ®åŒ…ï¼›å½“is_frag&2ä¸ºçœŸæ—¶ï¼Œè¡¨ç¤ºè¿™æ˜¯ä¸€ä¸ªä½
+ * ç½®å¤„äºæœ€åçš„åˆ†ç‰‡æ•°æ®åŒ…ï¼›ç”±äºip_rcvå‡½æ•°å®ç°çš„ç¼ºé™·ï¼Œæ²¡æœ‰å¯¹ç¬¬ä¸€ä¸ªåˆ†ç‰‡è¿›è¡Œåˆ¤æ–­ï¼Œæ‰€ä»¥
+ * æ­¤å¤„ä¹Ÿå°±æ— æ³•è¡¨ç¤ºä½ç½®å¤„äºæœ€å‰çš„ç¬¬ä¸€ä¸ªåˆ†ç‰‡æ•°æ®åŒ…ã€‚
  */
 static void
 ip_forward(struct sk_buff *skb, struct device *dev, int is_frag)
 {
-  struct device *dev2;
-  struct iphdr *iph;
-  struct sk_buff *skb2;
-  struct rtable *rt;
-  unsigned char *ptr;
-  unsigned long raddr;
+	struct device *dev2;
+	struct iphdr *iph;
+	struct sk_buff *skb2;
+	struct rtable *rt;
+	unsigned char *ptr;
+	unsigned long raddr;
 
-  /*
+	/*
    * Only forward packets that were fired at us when we are in promiscuous
    * mode. In standard mode we rely on the driver to filter for us.
    */
-   
-  if(dev->flags&IFF_PROMISC)
-  {
-  	if(memcmp((char *)&skb[1],dev->dev_addr,dev->addr_len))
-  		return;
-  }
-  
-  /*
+
+	if (dev->flags & IFF_PROMISC)
+	{
+		if (memcmp((char *)&skb[1], dev->dev_addr, dev->addr_len))
+			return;
+	}
+
+	/*
    * According to the RFC, we must first decrease the TTL field. If
    * that reaches zero, we must reply an ICMP control message telling
    * that the packet's lifetime expired.
    */
-  iph = skb->h.iph;
-  iph->ttl--;
-  if (iph->ttl <= 0) {
-	DPRINTF((DBG_IP, "\nIP: *** datagram expired: TTL=0 (ignored) ***\n"));
-	DPRINTF((DBG_IP, "    SRC = %s   ", in_ntoa(iph->saddr)));
-	DPRINTF((DBG_IP, "    DST = %s (ignored)\n", in_ntoa(iph->daddr)));
+	iph = skb->h.iph;
+	iph->ttl--;
+	if (iph->ttl <= 0)
+	{
+		DPRINTF((DBG_IP, "\nIP: *** datagram expired: TTL=0 (ignored) ***\n"));
+		DPRINTF((DBG_IP, "    SRC = %s   ", in_ntoa(iph->saddr)));
+		DPRINTF((DBG_IP, "    DST = %s (ignored)\n", in_ntoa(iph->daddr)));
 
-	/* Tell the sender its packet died... */
-	icmp_send(skb, ICMP_TIME_EXCEEDED, ICMP_EXC_TTL, dev);
-	return;
-  }
+		/* Tell the sender its packet died... */
+		icmp_send(skb, ICMP_TIME_EXCEEDED, ICMP_EXC_TTL, dev);
+		return;
+	}
 
-  /* Re-compute the IP header checksum. */
-  ip_send_check(iph);
+	/* Re-compute the IP header checksum. */
+	ip_send_check(iph);
 
-  /*
+	/*
    * OK, the packet is still valid.  Fetch its destination address,
    * and give it to the IP sender for further processing.
    */
-  rt = rt_route(iph->daddr, NULL);
-  if (rt == NULL) {
-	DPRINTF((DBG_IP, "\nIP: *** routing (phase I) failed ***\n"));
+	rt = rt_route(iph->daddr, NULL);
+	if (rt == NULL)
+	{
+		DPRINTF((DBG_IP, "\nIP: *** routing (phase I) failed ***\n"));
 
-	/* Tell the sender its packet cannot be delivered... */
-	icmp_send(skb, ICMP_DEST_UNREACH, ICMP_NET_UNREACH, dev);
-	return;
-  }
+		/* Tell the sender its packet cannot be delivered... */
+		icmp_send(skb, ICMP_DEST_UNREACH, ICMP_NET_UNREACH, dev);
+		return;
+	}
 
-
-  /*
+	/*
    * Gosh.  Not only is the packet valid; we even know how to
    * forward it onto its final destination.  Can we say this
    * is being plain lucky?
    * If the router told us that there is no GW, use the dest.
    * IP address itself- we seem to be connected directly...
    */
-  raddr = rt->rt_gateway;
-  if (raddr != 0) {
-	rt = rt_route(raddr, NULL);
-	if (rt == NULL) {
-		DPRINTF((DBG_IP, "\nIP: *** routing (phase II) failed ***\n"));
+	raddr = rt->rt_gateway;
+	if (raddr != 0)
+	{
+		rt = rt_route(raddr, NULL);
+		if (rt == NULL)
+		{
+			DPRINTF((DBG_IP, "\nIP: *** routing (phase II) failed ***\n"));
 
-		/* Tell the sender its packet cannot be delivered... */
-		icmp_send(skb, ICMP_DEST_UNREACH, ICMP_HOST_UNREACH, dev);
-		return;
+			/* Tell the sender its packet cannot be delivered... */
+			icmp_send(skb, ICMP_DEST_UNREACH, ICMP_HOST_UNREACH, dev);
+			return;
+		}
+		if (rt->rt_gateway != 0)
+			raddr = rt->rt_gateway;
 	}
-	if (rt->rt_gateway != 0) raddr = rt->rt_gateway;
-  } else raddr = iph->daddr;
-  dev2 = rt->rt_dev;
+	else
+		raddr = iph->daddr;
+	dev2 = rt->rt_dev;
 
-
-  if (dev == dev2)
-	return;
-  /*
+	if (dev == dev2)
+		return;
+	/*
    * We now allocate a new buffer, and copy the datagram into it.
    * If the indicated interface is up and running, kick it.
    */
-  DPRINTF((DBG_IP, "\nIP: *** fwd %s -> ", in_ntoa(iph->saddr)));
-  DPRINTF((DBG_IP, "%s (via %s), LEN=%d\n",
-			in_ntoa(raddr), dev2->name, skb->len));
+	DPRINTF((DBG_IP, "\nIP: *** fwd %s -> ", in_ntoa(iph->saddr)));
+	DPRINTF((DBG_IP, "%s (via %s), LEN=%d\n",
+			 in_ntoa(raddr), dev2->name, skb->len));
 
-  if (dev2->flags & IFF_UP) {
-	skb2 = (struct sk_buff *) alloc_skb(sizeof(struct sk_buff) +
-		       dev2->hard_header_len + skb->len, GFP_ATOMIC);
-	if (skb2 == NULL) {
-		printk("\nIP: No memory available for IP forward\n");
-		return;
-	}
-	ptr = skb2->data;
-	skb2->sk = NULL;
-	skb2->free = 1;
-	skb2->len = skb->len + dev2->hard_header_len;
-	skb2->mem_addr = skb2;
-	skb2->mem_len = sizeof(struct sk_buff) + skb2->len;
-	skb2->next = NULL;
-	skb2->h.raw = ptr;
-
-	/* Copy the packet data into the new buffer. */
-	memcpy(ptr + dev2->hard_header_len, skb->h.raw, skb->len);
-		
-	/* Now build the MAC header. */
-	(void) ip_send(skb2, raddr, skb->len, dev2, dev2->pa_addr);
-
-	if(skb2->len > dev2->mtu)
+	if (dev2->flags & IFF_UP)
 	{
-		ip_fragment(NULL,skb2,dev2, is_frag);
-		kfree_skb(skb2,FREE_WRITE);
-	}
-	else
-		dev2->queue_xmit(skb2, dev2, SOPRI_NORMAL);
-  }
-}
+		skb2 = (struct sk_buff *)alloc_skb(sizeof(struct sk_buff) +
+											   dev2->hard_header_len + skb->len,
+										   GFP_ATOMIC);
+		if (skb2 == NULL)
+		{
+			printk("\nIP: No memory available for IP forward\n");
+			return;
+		}
+		ptr = skb2->data;
+		skb2->sk = NULL;
+		skb2->free = 1;
+		skb2->len = skb->len + dev2->hard_header_len;
+		skb2->mem_addr = skb2;
+		skb2->mem_len = sizeof(struct sk_buff) + skb2->len;
+		skb2->next = NULL;
+		skb2->h.raw = ptr;
 
+		/* Copy the packet data into the new buffer. */
+		memcpy(ptr + dev2->hard_header_len, skb->h.raw, skb->len);
+
+		/* Now build the MAC header. */
+		(void)ip_send(skb2, raddr, skb->len, dev2, dev2->pa_addr);
+
+		if (skb2->len > dev2->mtu)
+		{
+			ip_fragment(NULL, skb2, dev2, is_frag);
+			kfree_skb(skb2, FREE_WRITE);
+		}
+		else
+			dev2->queue_xmit(skb2, dev2, SOPRI_NORMAL);
+	}
+}
 
 #endif
 
 /* This function receives all incoming IP datagrams. */
-/* ¸Ãº¯ÊıÔÚÁ´Â·²ã±»µ÷ÓÃ */
-int
-ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
+/* è¯¥å‡½æ•°åœ¨é“¾è·¯å±‚è¢«è°ƒç”¨ */
+int ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
 {
-  struct iphdr *iph = skb->h.iph;
-  unsigned char hash;
-  /* ±ê¼Ç£¬±íÊ¾¸ÃskbÄÜ¹»Ë³Àû½»¸øÉÏ²ã´¦Àí£¬Èç¹û²»ÄÜ½»¸øÉÏ²ã´¦Àí£¬Ôò·¢ËÍ²»¿É´ï´íÎó */
-  unsigned char flag = 0;         
-  unsigned char opts_p = 0;	/* Set iff the packet has options. */
-  struct inet_protocol *ipprot;
-  static struct options opt; /* since we don't use these yet, and they
+	struct iphdr *iph = skb->h.iph;
+	unsigned char hash;
+	/* æ ‡è®°ï¼Œè¡¨ç¤ºè¯¥skbèƒ½å¤Ÿé¡ºåˆ©äº¤ç»™ä¸Šå±‚å¤„ç†ï¼Œå¦‚æœä¸èƒ½äº¤ç»™ä¸Šå±‚å¤„ç†ï¼Œåˆ™å‘é€ä¸å¯è¾¾é”™è¯¯ */
+	unsigned char flag = 0;
+	unsigned char opts_p = 0; /* Set iff the packet has options. */
+	struct inet_protocol *ipprot;
+	static struct options opt; /* since we don't use these yet, and they
 				take up stack space. */
-  int brd;
-  int is_frag=0;
+	int brd;
+	int is_frag = 0;
 
-  DPRINTF((DBG_IP, "<<\n"));
+	DPRINTF((DBG_IP, "<<\n"));
 
-  skb->ip_hdr = iph;		/* Fragments can cause ICMP errors too! */
-  /* Is the datagram acceptable? */
-  if (skb->len<sizeof(struct iphdr) || iph->ihl<5 || iph->version != 4 || ip_fast_csum((unsigned char *)iph, iph->ihl) !=0) {
-	DPRINTF((DBG_IP, "\nIP: *** datagram error ***\n"));
-	DPRINTF((DBG_IP, "    SRC = %s   ", in_ntoa(iph->saddr)));
-	DPRINTF((DBG_IP, "    DST = %s (ignored)\n", in_ntoa(iph->daddr)));
-	skb->sk = NULL;
-	kfree_skb(skb, FREE_WRITE);
-	return(0);
-  }
-  
-  /* Èç¹ûĞ¯´øÓĞ¶îÍâÊı¾İ */
-  if (iph->ihl != 5) {  	/* Fast path for the typical optionless IP packet. */
-      ip_print(iph);		/* Bogus, only for debugging. */
-      memset((char *) &opt, 0, sizeof(opt));
-      if (do_options(iph, &opt) != 0)
-	  return 0;
-      opts_p = 1;
-  }
+	skb->ip_hdr = iph; /* Fragments can cause ICMP errors too! */
+	/* Is the datagram acceptable? */
+	if (skb->len < sizeof(struct iphdr) || iph->ihl < 5 || iph->version != 4 || ip_fast_csum((unsigned char *)iph, iph->ihl) != 0)
+	{
+		DPRINTF((DBG_IP, "\nIP: *** datagram error ***\n"));
+		DPRINTF((DBG_IP, "    SRC = %s   ", in_ntoa(iph->saddr)));
+		DPRINTF((DBG_IP, "    DST = %s (ignored)\n", in_ntoa(iph->daddr)));
+		skb->sk = NULL;
+		kfree_skb(skb, FREE_WRITE);
+		return (0);
+	}
 
-  if (iph->frag_off & 0x0020)
-  	is_frag|=1;
-  if (ntohs(iph->frag_off) & 0x1fff)
-  	is_frag|=2;
-  	
-  /* Do any IP forwarding required.  chk_addr() is expensive -- avoid it someday. */
-  if ((brd = chk_addr(iph->daddr)) == 0) {
+	/* å¦‚æœæºå¸¦æœ‰é¢å¤–æ•°æ® */
+	if (iph->ihl != 5)
+	{				   /* Fast path for the typical optionless IP packet. */
+		ip_print(iph); /* Bogus, only for debugging. */
+		memset((char *)&opt, 0, sizeof(opt));
+		if (do_options(iph, &opt) != 0)
+			return 0;
+		opts_p = 1;
+	}
+
+	if (iph->frag_off & 0x0020)
+		is_frag |= 1;
+	if (ntohs(iph->frag_off) & 0x1fff)
+		is_frag |= 2;
+
+	/* Do any IP forwarding required.  chk_addr() is expensive -- avoid it someday. */
+	if ((brd = chk_addr(iph->daddr)) == 0)
+	{
 #ifdef CONFIG_IP_FORWARD
-	ip_forward(skb, dev, is_frag);
+		ip_forward(skb, dev, is_frag);
 #else
-	printk("Machine %x tried to use us as a forwarder to %x but we have forwarding disabled!\n",
-			iph->saddr,iph->daddr);
-#endif			
-	skb->sk = NULL;
-	kfree_skb(skb, FREE_WRITE);
-	return(0);
-  }
+		printk("Machine %x tried to use us as a forwarder to %x but we have forwarding disabled!\n",
+			   iph->saddr, iph->daddr);
+#endif
+		skb->sk = NULL;
+		kfree_skb(skb, FREE_WRITE);
+		return (0);
+	}
 
-  /*
+	/*
    * Reassemble IP fragments. 
    */
-  /* Èç¹ûÊÇÒ»¸ö·ÖÆ¬Êı¾İ°ü */
-  if(is_frag)
-  {
+	/* å¦‚æœæ˜¯ä¸€ä¸ªåˆ†ç‰‡æ•°æ®åŒ… */
+	if (is_frag)
+	{
 #ifdef CONFIG_IP_DEFRAG
-        /* Èç¹û·ÖÆ¬Êı¾İ°ü²»ÍêÕû£¬Ò²¾ÍÊÇ·µ»ØÎªNULL£¬ÔòÖ±½Ó·µ»Ø */
-        skb=ip_defrag(iph,skb,dev);
-        if(skb==NULL)
-        {
-        	return 0;
-        }
-        iph=skb->h.iph;
+		/* å¦‚æœåˆ†ç‰‡æ•°æ®åŒ…ä¸å®Œæ•´ï¼Œä¹Ÿå°±æ˜¯è¿”å›ä¸ºNULLï¼Œåˆ™ç›´æ¥è¿”å› */
+		skb = ip_defrag(iph, skb, dev);
+		if (skb == NULL)
+		{
+			return 0;
+		}
+		iph = skb->h.iph;
 #else
-	printk("\nIP: *** datagram fragmentation not yet implemented ***\n");
-	printk("    SRC = %s   ", in_ntoa(iph->saddr));
-	printk("    DST = %s (ignored)\n", in_ntoa(iph->daddr));
-	icmp_send(skb, ICMP_DEST_UNREACH, ICMP_PROT_UNREACH, dev);
-	skb->sk = NULL;
-	kfree_skb(skb, FREE_WRITE);
-	return(0);
+		printk("\nIP: *** datagram fragmentation not yet implemented ***\n");
+		printk("    SRC = %s   ", in_ntoa(iph->saddr));
+		printk("    DST = %s (ignored)\n", in_ntoa(iph->daddr));
+		icmp_send(skb, ICMP_DEST_UNREACH, ICMP_PROT_UNREACH, dev);
+		skb->sk = NULL;
+		kfree_skb(skb, FREE_WRITE);
+		return (0);
 #endif
-  }
+	}
 
-
-
-  if(brd==IS_INVBCAST)
-  {
-/*	printk("Invalid broadcast address from %x [target %x] (Probably they have a wrong netmask)\n",
+	if (brd == IS_INVBCAST)
+	{
+		/*	printk("Invalid broadcast address from %x [target %x] (Probably they have a wrong netmask)\n",
 		iph->saddr,iph->daddr);*/
-  	skb->sk=NULL;
-  	kfree_skb(skb,FREE_WRITE);
-  	return(0);
-  }
-  
-  /* Point into the IP datagram, just past the header. */
+		skb->sk = NULL;
+		kfree_skb(skb, FREE_WRITE);
+		return (0);
+	}
 
-  skb->ip_hdr = iph;
-  /* h.raw¼ÇÂ¼Í·²¿Ö®ºóµÄTCPÊı¾İ */
-  skb->h.raw += iph->ihl*4;
-  hash = iph->protocol & (MAX_INET_PROTOS -1);
+	/* Point into the IP datagram, just past the header. */
 
-  /* Í¨¹ıÕâ¸öÑ­»·µ÷ÓÃµ½ÉÏ²ãµÄtcp_rcvº¯Êı */
-  for (ipprot = (struct inet_protocol *)inet_protos[hash];
-       ipprot != NULL;
-       ipprot=(struct inet_protocol *)ipprot->next)
-    {
-       struct sk_buff *skb2;
+	skb->ip_hdr = iph;
+	/* h.rawè®°å½•å¤´éƒ¨ä¹‹åçš„TCPæ•°æ® */
+	skb->h.raw += iph->ihl * 4;
+	hash = iph->protocol & (MAX_INET_PROTOS - 1);
 
-       if (ipprot->protocol != iph->protocol) continue;
-       DPRINTF((DBG_IP, "Using protocol = %X:\n", ipprot));
-       print_ipprot(ipprot);
+	/* é€šè¿‡è¿™ä¸ªå¾ªç¯è°ƒç”¨åˆ°ä¸Šå±‚çš„tcp_rcvå‡½æ•° */
+	for (ipprot = (struct inet_protocol *)inet_protos[hash];
+		 ipprot != NULL;
+		 ipprot = (struct inet_protocol *)ipprot->next)
+	{
+		struct sk_buff *skb2;
 
-       /*
+		if (ipprot->protocol != iph->protocol)
+			continue;
+		DPRINTF((DBG_IP, "Using protocol = %X:\n", ipprot));
+		print_ipprot(ipprot);
+
+		/*
 	* See if we need to make a copy of it.  This will
 	* only be set if more than one protocol wants it. 
 	* and then not for the last one.
 	*/
-       /* Ö´ĞĞµ½Õâ±íÊ¾´«Êä²ãĞ­ÒéÏàÍ¬£¬Èç¹ûÓĞcopyÎ»£¬
-         * Ôò±íÊ¾ÔÚÍøÂç²ãÏë´«Êä²ã´«µİÊı¾İÊ±£¬²»Ö¹Ò»¸ö 
-         * Ğ­ÒéĞèÒª¸ÃÊı¾İ°ü£¬×¢ÒâÕâÊÇÔÚÒ»¸öforÑ­»·µ±ÖĞ£¬ 
-         * »á½«Êı¾İ°ü·¢ËÍ¸øËùÓĞĞ­ÒéÏàÍ¬µÄÉÏ´«Ğ­Òé 
+		/* æ‰§è¡Œåˆ°è¿™è¡¨ç¤ºä¼ è¾“å±‚åè®®ç›¸åŒï¼Œå¦‚æœæœ‰copyä½ï¼Œ
+         * åˆ™è¡¨ç¤ºåœ¨ç½‘ç»œå±‚æƒ³ä¼ è¾“å±‚ä¼ é€’æ•°æ®æ—¶ï¼Œä¸æ­¢ä¸€ä¸ª 
+         * åè®®éœ€è¦è¯¥æ•°æ®åŒ…ï¼Œæ³¨æ„è¿™æ˜¯åœ¨ä¸€ä¸ªforå¾ªç¯å½“ä¸­ï¼Œ 
+         * ä¼šå°†æ•°æ®åŒ…å‘é€ç»™æ‰€æœ‰åè®®ç›¸åŒçš„ä¸Šä¼ åè®® 
          */
-       if (ipprot->copy) {
-                /* ÖØĞÂÒª·ÖÅäÒ»¸öskb */
-		skb2 = alloc_skb(skb->mem_len, GFP_ATOMIC);
-		if (skb2 == NULL) 
-			continue;
-		memcpy(skb2, skb, skb->mem_len);
-		skb2->mem_addr = skb2;
-		skb2->ip_hdr = (struct iphdr *)(
-				(unsigned long)skb2 +
-				(unsigned long) skb->ip_hdr -
-				(unsigned long)skb);
-		skb2->h.raw = (unsigned char *)(
-				(unsigned long)skb2 +
-				(unsigned long) skb->h.raw -
-				(unsigned long)skb);
-                /* ±íÃ÷ÎŞĞè»º´æ */
-		skb2->free=1;
-	} else {
-		skb2 = skb;
-	}
-        /* ¿ÉÒÔÕı³£½»¸øÉÏ²ãĞ­Òé´¦Àí */
-	flag = 1;
+		if (ipprot->copy)
+		{
+			/* é‡æ–°è¦åˆ†é…ä¸€ä¸ªskb */
+			skb2 = alloc_skb(skb->mem_len, GFP_ATOMIC);
+			if (skb2 == NULL)
+				continue;
+			memcpy(skb2, skb, skb->mem_len);
+			skb2->mem_addr = skb2;
+			skb2->ip_hdr = (struct iphdr *)((unsigned long)skb2 +
+											(unsigned long)skb->ip_hdr -
+											(unsigned long)skb);
+			skb2->h.raw = (unsigned char *)((unsigned long)skb2 +
+											(unsigned long)skb->h.raw -
+											(unsigned long)skb);
+			/* è¡¨æ˜æ— éœ€ç¼“å­˜ */
+			skb2->free = 1;
+		}
+		else
+		{
+			skb2 = skb;
+		}
+		/* å¯ä»¥æ­£å¸¸äº¤ç»™ä¸Šå±‚åè®®å¤„ç† */
+		flag = 1;
 
-       /*
+		/*
 	* Pass on the datagram to each protocol that wants it,
 	* based on the datagram protocol.  We should really
 	* check the protocol handler's return values here...
 	*/
 
-        /* ´Ë´¦¿ªÊ¼µ÷ÓÃµ½tcp_rcvº¯Êı£¬´Ë´¦´¦ÀíµÄÊÇskb2£¬
-          * Èç¹ûÓĞcopyÎ»£¬ÔòÖØĞÂ¸´ÖÆÒ»¸öskb£¬
+		/* æ­¤å¤„å¼€å§‹è°ƒç”¨åˆ°tcp_rcvå‡½æ•°ï¼Œæ­¤å¤„å¤„ç†çš„æ˜¯skb2ï¼Œ
+          * å¦‚æœæœ‰copyä½ï¼Œåˆ™é‡æ–°å¤åˆ¶ä¸€ä¸ªskbï¼Œ
           */
-	ipprot->handler(skb2, dev, opts_p ? &opt : 0, iph->daddr,
-			(ntohs(iph->tot_len) - (iph->ihl * 4)),
-			iph->saddr, 0, ipprot);
+		ipprot->handler(skb2, dev, opts_p ? &opt : 0, iph->daddr,
+						(ntohs(iph->tot_len) - (iph->ihl * 4)),
+						iph->saddr, 0, ipprot);
+	}
 
-  }
-
-  /*
+	/*
    * All protocols checked.
    * If this packet was a broadcast, we may *not* reply to it, since that
    * causes (proven, grin) ARP storms and a leakage of memory (i.e. all
    * ICMP reply messages get queued up for transmission...)
    */
-  /* Ã»ÓĞºÏÊÊµÄ´«Êä²ã´¦Àíº¯Êı */
-  if (!flag) {
-	if (brd != IS_BROADCAST)
-		icmp_send(skb, ICMP_DEST_UNREACH, ICMP_PROT_UNREACH, dev);
-	skb->sk = NULL;
-	kfree_skb(skb, FREE_WRITE);
-  }
+	/* æ²¡æœ‰åˆé€‚çš„ä¼ è¾“å±‚å¤„ç†å‡½æ•° */
+	if (!flag)
+	{
+		if (brd != IS_BROADCAST)
+			icmp_send(skb, ICMP_DEST_UNREACH, ICMP_PROT_UNREACH, dev);
+		skb->sk = NULL;
+		kfree_skb(skb, FREE_WRITE);
+	}
 
-  return(0);
+	return (0);
 }
-
 
 /*
  * Queues a packet to be sent, and starts the transmitter
@@ -1481,163 +1506,185 @@ ip_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
  * compute the checksum.
  */
 
-/* ip_queue_xmitº¯Êı×÷ÎªÊı¾İ°ü·¢ËÍº¯Êı£¬±»ÍøÂç²ãºÍ´«Êä²ãĞ­Òé¹²Í¬µ÷ÓÃ¡£Èç¹ûËµip_rcv
- * ÊÇÊı¾İ°üÉÏĞĞÍ¨µÀº¯Êı£¬ÄÇÃ´ip_queue_xmit¾ÍÊÇÊı¾İ°üÏÂĞĞÍ¨µÀº¯Êı¡£ÔÚÍê³ÉÒ»¸öÊı¾İèå
- * µÄ´´½¨ºó£¬ip_queue_xmitº¯Êı¼´±»µ÷ÓÃ½«Êı¾İ°ü·¢ÍùÏÂ²ã£¨Á´Â·²ã£¬Í¨¹ıµ÷ÓÃ
- * dev_queue_xmitº¯Êı£©½øĞĞ´¦Àí¡£ËùÒÔip_queue_xmitÊÇÍ¨ÍùÁ´Â·²ãµÄ¹¦ÄÜ½Ó¿Úº¯Êı£¬Ëù´¦
- * µÄÎ»ÖÃºÍ¹¤×÷Ê®·ÖÖØÒª¡£ÔÚ·ÖÎöip_fragmentº¯ÊıÊ±£¬Ã¿µ±Íê³ÉÒ»¸ö·ÖÆ¬µÄ´´½¨£¬
- * ip_queue_xmit¾Í±»µ÷ÓÃ£¬½«Õâ¸ö±»´´½¨·ÖÆ¬·¢ËÍ³öÈ¥¡£¶øÔÚTCPĞ­Òé£¬UDPĞ­ÒéÖĞ£¬
- * ip_queue_xmitº¯ÊıÔò±»µ÷ÓÃµÄÏàµ±Æµ·±£¬ÔÚÕâĞ©Ğ­ÒéÊµÏÖÎÄ¼şÖĞ£¬µ÷ÓÃÊ±Í¨¹ıº¯ÊıÖ¸ÕëÍê
- * ³ÉµÄ£¬tcp_prot->queue_xmit, udp_prot->queue_xmit¶¼Ö¸Ïòip_queue_xmitº¯Êı£¬¶øICMP
- * Ğ­ÒéÊµÏÖÖĞ£¬ Êı¾İ°üµÄ·¢ËÍÔòÊÇÖ±½Óµ÷ÓÃip_queue_xmitº¯Êı¡£ ÏÂÃæÎÒÃÇ¾Í¶Ôip_queue_xmit
- * º¯Êı½øĞĞ·ÖÎö¡£
- * ²ÎÊıËµÃ÷£º
- * sk£º±»·¢ËÍÊı¾İ°ü¶ÔÓ¦µÄÌ×½Ó×Ö¡£
- * dev£º·¢ËÍÊı¾İ°üµÄÍøÂçÉè±¸¡£
- * skb£º±»·¢ËÍµÄÊı¾İ°ü¡£
- * free£ºÊÇ·ñ¶ÔÊı¾İ°ü½øĞĞ»º´æÒÔ±ãÓÚ´ËºóµÄ³¬Ê±ÖØ·¢£¬¸Ã×Ö¶ÎÖ÷ÒªÅäºÏTCPĞ­Òé¹¤×÷¡£UDP
- * Ğ­Òé£¬ICMPĞ­ÒéµÈÔÚµ÷ÓÃip_queue_xmitÊ±½«¸Ã²ÎÊıÉèÖÃÎª1¡£
- * ÔÚº¯ÊıµÄ×îºó×îÖÕ½»¸ø¶ÔÓ¦µÄÉè±¸È¥·¢ËÍÁË
+/* ip_queue_xmitå‡½æ•°ä½œä¸ºæ•°æ®åŒ…å‘é€å‡½æ•°ï¼Œè¢«ç½‘ç»œå±‚å’Œä¼ è¾“å±‚åè®®å…±åŒè°ƒç”¨ã€‚å¦‚æœè¯´ip_rcv
+ * æ˜¯æ•°æ®åŒ…ä¸Šè¡Œé€šé“å‡½æ•°ï¼Œé‚£ä¹ˆip_queue_xmitå°±æ˜¯æ•°æ®åŒ…ä¸‹è¡Œé€šé“å‡½æ•°ã€‚åœ¨å®Œæˆä¸€ä¸ªæ•°æ®æ¡¢
+ * çš„åˆ›å»ºåï¼Œip_queue_xmitå‡½æ•°å³è¢«è°ƒç”¨å°†æ•°æ®åŒ…å‘å¾€ä¸‹å±‚ï¼ˆé“¾è·¯å±‚ï¼Œé€šè¿‡è°ƒç”¨
+ * dev_queue_xmitå‡½æ•°ï¼‰è¿›è¡Œå¤„ç†ã€‚æ‰€ä»¥ip_queue_xmitæ˜¯é€šå¾€é“¾è·¯å±‚çš„åŠŸèƒ½æ¥å£å‡½æ•°ï¼Œæ‰€å¤„
+ * çš„ä½ç½®å’Œå·¥ä½œååˆ†é‡è¦ã€‚åœ¨åˆ†æip_fragmentå‡½æ•°æ—¶ï¼Œæ¯å½“å®Œæˆä¸€ä¸ªåˆ†ç‰‡çš„åˆ›å»ºï¼Œ
+ * ip_queue_xmitå°±è¢«è°ƒç”¨ï¼Œå°†è¿™ä¸ªè¢«åˆ›å»ºåˆ†ç‰‡å‘é€å‡ºå»ã€‚è€Œåœ¨TCPåè®®ï¼ŒUDPåè®®ä¸­ï¼Œ
+ * ip_queue_xmitå‡½æ•°åˆ™è¢«è°ƒç”¨çš„ç›¸å½“é¢‘ç¹ï¼Œåœ¨è¿™äº›åè®®å®ç°æ–‡ä»¶ä¸­ï¼Œè°ƒç”¨æ—¶é€šè¿‡å‡½æ•°æŒ‡é’ˆå®Œ
+ * æˆçš„ï¼Œtcp_prot->queue_xmit, udp_prot->queue_xmitéƒ½æŒ‡å‘ip_queue_xmitå‡½æ•°ï¼Œè€ŒICMP
+ * åè®®å®ç°ä¸­ï¼Œ æ•°æ®åŒ…çš„å‘é€åˆ™æ˜¯ç›´æ¥è°ƒç”¨ip_queue_xmitå‡½æ•°ã€‚ ä¸‹é¢æˆ‘ä»¬å°±å¯¹ip_queue_xmit
+ * å‡½æ•°è¿›è¡Œåˆ†æã€‚
+ * å‚æ•°è¯´æ˜ï¼š
+ * skï¼šè¢«å‘é€æ•°æ®åŒ…å¯¹åº”çš„å¥—æ¥å­—ã€‚
+ * devï¼šå‘é€æ•°æ®åŒ…çš„ç½‘ç»œè®¾å¤‡ã€‚
+ * skbï¼šè¢«å‘é€çš„æ•°æ®åŒ…ã€‚
+ * freeï¼šæ˜¯å¦å¯¹æ•°æ®åŒ…è¿›è¡Œç¼“å­˜ä»¥ä¾¿äºæ­¤åçš„è¶…æ—¶é‡å‘ï¼Œè¯¥å­—æ®µä¸»è¦é…åˆTCPåè®®å·¥ä½œã€‚UDP
+ * åè®®ï¼ŒICMPåè®®ç­‰åœ¨è°ƒç”¨ip_queue_xmitæ—¶å°†è¯¥å‚æ•°è®¾ç½®ä¸º1ã€‚
+ * åœ¨å‡½æ•°çš„æœ€åæœ€ç»ˆäº¤ç»™å¯¹åº”çš„è®¾å¤‡å»å‘é€äº†
  */
-void
-ip_queue_xmit(struct sock *sk, struct device *dev, 
-	      struct sk_buff *skb, int free)
+void ip_queue_xmit(struct sock *sk, struct device *dev,
+				   struct sk_buff *skb, int free)
 {
-  struct iphdr *iph;
-  unsigned char *ptr;
+	struct iphdr *iph;
+	unsigned char *ptr;
 
-  /* Èç¹ûÊı¾İ°üÎŞ¶ÔÓ¦Ì×½Ó×Ö£¬Ôò½«free²ÎÊıÉèÖÃÎª1£¬ÒòÎªÃ»ÓĞ¶ÔÓ¦sock½á¹¹£¬ÔòÎŞ·¨¶ÔÊı¾İ
-    * °ü½øĞĞ»º´æ£¬ ËùÒÔÔÚ½«Êı¾İ°ü·¢ÍùÏÂ²ãºó£¬ ÊÍ·ÅÊı¾İ°ü 
+	/* å¦‚æœæ•°æ®åŒ…æ— å¯¹åº”å¥—æ¥å­—ï¼Œåˆ™å°†freeå‚æ•°è®¾ç½®ä¸º1ï¼Œå› ä¸ºæ²¡æœ‰å¯¹åº”sockç»“æ„ï¼Œåˆ™æ— æ³•å¯¹æ•°æ®
+    * åŒ…è¿›è¡Œç¼“å­˜ï¼Œ æ‰€ä»¥åœ¨å°†æ•°æ®åŒ…å‘å¾€ä¸‹å±‚åï¼Œ é‡Šæ”¾æ•°æ®åŒ… 
     */
-  if (sk == NULL) free = 1;
-  if (dev == NULL) {
-	printk("IP: ip_queue_xmit dev = NULL\n");
-	return;
-  }
-  IS_SKB(skb);
-  skb->free = free;
-  skb->dev = dev;
-  skb->when = jiffies;
-  
-  DPRINTF((DBG_IP, ">>\n"));
-  ptr = skb->data;
-  ptr += dev->hard_header_len;
-  iph = (struct iphdr *)ptr;
-  skb->ip_hdr = iph;
-  iph->tot_len = ntohs(skb->len-dev->hard_header_len);
+	if (sk == NULL)
+		free = 1;
+	if (dev == NULL)
+	{
+		printk("IP: ip_queue_xmit dev = NULL\n");
+		return;
+	}
+	IS_SKB(skb);
+	skb->free = free;
+	skb->dev = dev;
+	skb->when = jiffies;
 
-  /* Èç¹û³¬¹ı×î´ó´«Êäµ¥Ôª£¬ÔòÒ»¶¨Òª·ÖÆ¬ */
-  if(skb->len > dev->mtu)
-  {
-/*  	printk("Fragment!\n");*/
-  	ip_fragment(sk,skb,dev,0);
-  	IS_SKB(skb);
-  	kfree_skb(skb,FREE_WRITE);
-  	return;
-  }
-  
-  ip_send_check(iph);
-  ip_print(iph);
-  skb->next = NULL;
+	DPRINTF((DBG_IP, ">>\n"));
+	ptr = skb->data;
+	ptr += dev->hard_header_len;
+	iph = (struct iphdr *)ptr;
+	skb->ip_hdr = iph;
+	iph->tot_len = ntohs(skb->len - dev->hard_header_len);
 
-  /* See if this is the one trashing our queue. Ross? */
-  skb->magic = 1;
-  /* free=0±íÊ¾Òª½«·¢ËÍµÄskb²åÈëµ½ÒÑ·¢ËÍµ«»¹Ã»ÓĞÈ·ÈÏµÄ¶ÓÁĞÉÏ£¬µÈ´ıÏÂ´Î³¬Ê±ÖØ·¢ */
-  if (!free) {
-	skb->link3 = NULL;
-	sk->packets_out++;
-	cli();
-	if (sk->send_head == NULL) {
-		sk->send_tail = skb;
-		sk->send_head = skb;
-	} else {
-		/* See if we've got a problem. */
-		if (sk->send_tail == NULL) {
-			printk("IP: ***bug sk->send_tail == NULL != sk->send_head\n");
-			sort_send(sk);
-		} else {
-			sk->send_tail->link3 = skb;
+	/* å¦‚æœè¶…è¿‡æœ€å¤§ä¼ è¾“å•å…ƒï¼Œåˆ™ä¸€å®šè¦åˆ†ç‰‡ */
+	if (skb->len > dev->mtu)
+	{
+		/*  	printk("Fragment!\n");*/
+		ip_fragment(sk, skb, dev, 0);
+		IS_SKB(skb);
+		kfree_skb(skb, FREE_WRITE);
+		return;
+	}
+
+	ip_send_check(iph);
+	ip_print(iph);
+	skb->next = NULL;
+
+	/* See if this is the one trashing our queue. Ross? */
+	skb->magic = 1;
+	/* free=0è¡¨ç¤ºè¦å°†å‘é€çš„skbæ’å…¥åˆ°å·²å‘é€ä½†è¿˜æ²¡æœ‰ç¡®è®¤çš„é˜Ÿåˆ—ä¸Šï¼Œç­‰å¾…ä¸‹æ¬¡è¶…æ—¶é‡å‘ */
+	if (!free)
+	{
+		skb->link3 = NULL;
+		sk->packets_out++;
+		cli();
+		if (sk->send_head == NULL)
+		{
 			sk->send_tail = skb;
+			sk->send_head = skb;
+		}
+		else
+		{
+			/* See if we've got a problem. */
+			if (sk->send_tail == NULL)
+			{
+				printk("IP: ***bug sk->send_tail == NULL != sk->send_head\n");
+				sort_send(sk);
+			}
+			else
+			{
+				sk->send_tail->link3 = skb;
+				sk->send_tail = skb;
+			}
+		}
+		sti();
+		reset_timer(sk, TIME_WRITE, sk->rto);
+	}
+	else
+	{
+		skb->sk = sk;
+	}
+
+	/* If the indicated interface is up and running, kick it. */
+	if (dev->flags & IFF_UP)
+	{
+		if (sk != NULL)
+		{
+			dev->queue_xmit(skb, dev, sk->priority);
+		}
+		else
+		{
+			dev->queue_xmit(skb, dev, SOPRI_NORMAL);
 		}
 	}
-	sti();
-	reset_timer(sk, TIME_WRITE, sk->rto);
-  } else {
-	skb->sk = sk;
-  }
-
-  /* If the indicated interface is up and running, kick it. */
-  if (dev->flags & IFF_UP) {
-	if (sk != NULL) {
-		dev->queue_xmit(skb, dev, sk->priority);
-	} 
-	else {
-		dev->queue_xmit(skb, dev, SOPRI_NORMAL);
+	else
+	{
+		if (free)
+			kfree_skb(skb, FREE_WRITE);
 	}
-  } else {
-	if (free) kfree_skb(skb, FREE_WRITE);
-  }
 }
 
-
-void
-ip_do_retransmit(struct sock *sk, int all)
+void ip_do_retransmit(struct sock *sk, int all)
 {
-  struct sk_buff * skb;
-  struct proto *prot;
-  struct device *dev;
-  int retransmits;
+	struct sk_buff *skb;
+	struct proto *prot;
+	struct device *dev;
+	int retransmits;
 
-  prot = sk->prot;
-  skb = sk->send_head;
-  retransmits = sk->retransmits;
-  while (skb != NULL) {
-	dev = skb->dev;
-	/* I know this can't happen but as it does.. */
-	if(dev==NULL)
+	prot = sk->prot;
+	skb = sk->send_head;
+	retransmits = sk->retransmits;
+	while (skb != NULL)
 	{
-		printk("ip_retransmit: NULL device bug!\n");
-		goto oops;
-	}
+		dev = skb->dev;
+		/* I know this can't happen but as it does.. */
+		if (dev == NULL)
+		{
+			printk("ip_retransmit: NULL device bug!\n");
+			goto oops;
+		}
 
-	IS_SKB(skb);
-	
-	/*
+		IS_SKB(skb);
+
+		/*
 	 * The rebuild_header function sees if the ARP is done.
 	 * If not it sends a new ARP request, and if so it builds
 	 * the header.
 	 */
-        cli();	/* We might get interrupted by an arp reply here and fill
+		cli(); /* We might get interrupted by an arp reply here and fill
 		   the frame in twice. Because of the technique used this
 		   would be a little sad */
-	if (!skb->arp) {
-		if (dev->rebuild_header(skb->data, dev)) {
-			sti();	/* Failed to rebuild - next */
-			if (!all) break;
-			skb = (struct sk_buff *)skb->link3;
-			continue;
+		if (!skb->arp)
+		{
+			if (dev->rebuild_header(skb->data, dev))
+			{
+				sti(); /* Failed to rebuild - next */
+				if (!all)
+					break;
+				skb = (struct sk_buff *)skb->link3;
+				continue;
+			}
 		}
+		skb->arp = 1;
+		sti();
+		skb->when = jiffies;
+
+		/* If the interface is (still) up and running, kick it. */
+		if (dev->flags & IFF_UP)
+		{
+			if (sk && !skb_device_locked(skb))
+				dev->queue_xmit(skb, dev, sk->priority);
+			/*	  else dev->queue_xmit(skb, dev, SOPRI_NORMAL ); CANNOT HAVE SK=NULL HERE */
+		}
+
+	oops:
+		retransmits++;
+		/* å¢åŠ åè®®è¶…æ—¶é‡ä¼ çš„æ¬¡æ•° */
+		sk->prot->retransmits++;
+		if (!all)
+			break;
+
+		/* This should cut it off before we send too many packets. */
+		if (sk->retransmits > sk->cong_window)
+			break;
+		skb = (struct sk_buff *)skb->link3;
 	}
-	skb->arp = 1;
-	sti();
-	skb->when = jiffies;
-
-	/* If the interface is (still) up and running, kick it. */
-	if (dev->flags & IFF_UP) {
-		if (sk && !skb_device_locked(skb))
-			dev->queue_xmit(skb, dev, sk->priority);
-	/*	  else dev->queue_xmit(skb, dev, SOPRI_NORMAL ); CANNOT HAVE SK=NULL HERE */
-	}
-
-oops:	retransmits++;
-        /* Ôö¼ÓĞ­Òé³¬Ê±ÖØ´«µÄ´ÎÊı */
-	sk->prot->retransmits ++;
-	if (!all) break;
-
-	/* This should cut it off before we send too many packets. */
-	if (sk->retransmits > sk->cong_window) break;
-	skb = (struct sk_buff *)skb->link3;
-  }
 }
 
 /*
@@ -1647,13 +1694,12 @@ oops:	retransmits++;
  * initiating a backoff.
  */
 
-/* ipĞ­ÒéµÄ³¬Ê±ÖØ´«º¯Êı */
-void
-ip_retransmit(struct sock *sk, int all)
+/* ipåè®®çš„è¶…æ—¶é‡ä¼ å‡½æ•° */
+void ip_retransmit(struct sock *sk, int all)
 {
-  ip_do_retransmit(sk, all);
+	ip_do_retransmit(sk, all);
 
-  /*
+	/*
    * Increase the timeout each time we retransmit.  Note that
    * we do not increase the rtt estimate.  rto is initialized
    * from rtt, but increases here.  Jacobson (SIGCOMM 88) suggests
@@ -1666,10 +1712,10 @@ ip_retransmit(struct sock *sk, int all)
    * University of Mars.
    */
 
-  sk->retransmits++;
-  sk->backoff++;
-  sk->rto = min(sk->rto << 1, 120*HZ);
-  reset_timer(sk, TIME_WRITE, sk->rto);
+	sk->retransmits++;
+	sk->backoff++;
+	sk->rto = min(sk->rto << 1, 120 * HZ);
+	reset_timer(sk, TIME_WRITE, sk->rto);
 }
 
 /*
@@ -1677,70 +1723,70 @@ ip_retransmit(struct sock *sk, int all)
  *	an IP socket.
  */
 
-/* ip²ãÌ×½Ó¿ÚµÄÉèÖÃ  
+/* ipå±‚å¥—æ¥å£çš„è®¾ç½®  
  */
- 
+
 int ip_setsockopt(struct sock *sk, int level, int optname, char *optval, int optlen)
 {
-	int val,err;
-	
-  	if (optval == NULL) 
-  		return(-EINVAL);
+	int val, err;
 
-  	err=verify_area(VERIFY_READ, optval, sizeof(int));
-  	if(err)
-  		return err;
-  	
-  	val = get_fs_long((unsigned long *)optval);
+	if (optval == NULL)
+		return (-EINVAL);
 
-	if(level!=SOL_IP)
+	err = verify_area(VERIFY_READ, optval, sizeof(int));
+	if (err)
+		return err;
+
+	val = get_fs_long((unsigned long *)optval);
+
+	if (level != SOL_IP)
 		return -EOPNOTSUPP;
 
-	switch(optname)
+	switch (optname)
 	{
-		case IP_TOS:
-			if(val<0||val>255)
-				return -EINVAL;
-			sk->ip_tos=val;
-			return 0;
-		case IP_TTL:
-			if(val<1||val>255)
-				return -EINVAL;
-			sk->ip_ttl=val;
-			return 0;
-		/* IP_OPTIONS and friends go here eventually */
-		default:
-			return(-ENOPROTOOPT);
+	case IP_TOS:
+		if (val < 0 || val > 255)
+			return -EINVAL;
+		sk->ip_tos = val;
+		return 0;
+	case IP_TTL:
+		if (val < 1 || val > 255)
+			return -EINVAL;
+		sk->ip_ttl = val;
+		return 0;
+	/* IP_OPTIONS and friends go here eventually */
+	default:
+		return (-ENOPROTOOPT);
 	}
 }
 
 int ip_getsockopt(struct sock *sk, int level, int optname, char *optval, int *optlen)
 {
-	int val,err;
-	
-	if(level!=SOL_IP)
+	int val, err;
+
+	if (level != SOL_IP)
 		return -EOPNOTSUPP;
-		
-	switch(optname)
+
+	switch (optname)
 	{
-		case IP_TOS:
-			val=sk->ip_tos;
-			break;
-		case IP_TTL:
-			val=sk->ip_ttl;
-			break;
-		default:
-			return(-ENOPROTOOPT);
+	case IP_TOS:
+		val = sk->ip_tos;
+		break;
+	case IP_TTL:
+		val = sk->ip_ttl;
+		break;
+	default:
+		return (-ENOPROTOOPT);
 	}
-	err=verify_area(VERIFY_WRITE, optlen, sizeof(int));
-	if(err)
-  		return err;
-  	put_fs_long(sizeof(int),(unsigned long *) optlen);
+	err = verify_area(VERIFY_WRITE, optlen, sizeof(int));
+	if (err)
+		return err;
+	put_fs_long(sizeof(int), (unsigned long *)optlen);
 
-  	err=verify_area(VERIFY_WRITE, optval, sizeof(int));
-  	if(err)
-  		return err;
-  	put_fs_long(val,(unsigned long *)optval);
+	err = verify_area(VERIFY_WRITE, optval, sizeof(int));
+	if (err)
+		return err;
+	put_fs_long(val, (unsigned long *)optval);
 
-  	return(0);
+	return (0);
 }

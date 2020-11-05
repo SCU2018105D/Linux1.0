@@ -45,234 +45,243 @@
 #include "udp.h"
 #include "raw.h"
 
-
 static unsigned long
 min(unsigned long a, unsigned long b)
 {
-  if (a < b) return(a);
-  return(b);
+	if (a < b)
+		return (a);
+	return (b);
 }
-
 
 /* This should be the easiest of all, all we do is copy it into a buffer. */
-int
-packet_rcv(struct sk_buff *skb, struct device *dev,  struct packet_type *pt)
+int packet_rcv(struct sk_buff *skb, struct device *dev, struct packet_type *pt)
 {
-  struct sock *sk;
+	struct sock *sk;
 
-  sk = (struct sock *) pt->data;
-  skb->dev = dev;
-  skb->len += dev->hard_header_len;
+	sk = (struct sock *)pt->data;
+	skb->dev = dev;
+	skb->len += dev->hard_header_len;
 
-  skb->sk = sk;
+	skb->sk = sk;
 
-  /* Charge it too the socket. */
-  if (sk->rmem_alloc + skb->mem_len >= sk->rcvbuf) {
-	skb->sk = NULL;
-	kfree_skb(skb, FREE_READ);
-	return(0);
-  }
-  sk->rmem_alloc += skb->mem_len;
-  skb_queue_tail(&sk->rqueue,skb);
-  wake_up_interruptible(sk->sleep);
-  release_sock(sk);
-  return(0);
+	/* Charge it too the socket. */
+	if (sk->rmem_alloc + skb->mem_len >= sk->rcvbuf)
+	{
+		skb->sk = NULL;
+		kfree_skb(skb, FREE_READ);
+		return (0);
+	}
+	sk->rmem_alloc += skb->mem_len;
+	skb_queue_tail(&sk->rqueue, skb);
+	wake_up_interruptible(sk->sleep);
+	release_sock(sk);
+	return (0);
 }
-
 
 /* This will do terrible things if len + ipheader + devheader > dev->mtu */
 static int
 packet_sendto(struct sock *sk, unsigned char *from, int len,
-	      int noblock, unsigned flags, struct sockaddr_in *usin,
-	      int addr_len)
+			  int noblock, unsigned flags, struct sockaddr_in *usin,
+			  int addr_len)
 {
-  struct sk_buff *skb;
-  struct device *dev;
-  struct sockaddr saddr;
-  int err;
+	struct sk_buff *skb;
+	struct device *dev;
+	struct sockaddr saddr;
+	int err;
 
-  /* Check the flags. */
-  if (flags) return(-EINVAL);
-  if (len < 0) return(-EINVAL);
+	/* Check the flags. */
+	if (flags)
+		return (-EINVAL);
+	if (len < 0)
+		return (-EINVAL);
 
-  /* Get and verify the address. */
-  if (usin) {
-	if (addr_len < sizeof(saddr)) return(-EINVAL);
-	err=verify_area(VERIFY_READ, usin, sizeof(saddr));
-	if(err)
-		return err;
-	memcpy_fromfs(&saddr, usin, sizeof(saddr));
-  } else
-	return(-EINVAL);
-	
-  err=verify_area(VERIFY_READ,from,len);
-  if(err)
-  	return(err);
-/* Find the device first to size check it */
+	/* Get and verify the address. */
+	if (usin)
+	{
+		if (addr_len < sizeof(saddr))
+			return (-EINVAL);
+		err = verify_area(VERIFY_READ, usin, sizeof(saddr));
+		if (err)
+			return err;
+		memcpy_fromfs(&saddr, usin, sizeof(saddr));
+	}
+	else
+		return (-EINVAL);
 
-  saddr.sa_data[13] = 0;
-  dev = dev_get(saddr.sa_data);
-  if (dev == NULL) {
-	return(-ENXIO);
-  }
-  if(len>dev->mtu)
-  	return -EMSGSIZE;
+	err = verify_area(VERIFY_READ, from, len);
+	if (err)
+		return (err);
+	/* Find the device first to size check it */
 
-/* Now allocate the buffer, knowing 4K pagelimits wont break this line */  
-  skb = sk->prot->wmalloc(sk, len+sizeof(*skb), 0, GFP_KERNEL);
+	saddr.sa_data[13] = 0;
+	dev = dev_get(saddr.sa_data);
+	if (dev == NULL)
+	{
+		return (-ENXIO);
+	}
+	if (len > dev->mtu)
+		return -EMSGSIZE;
 
-  /* This shouldn't happen, but it could. */
-  if (skb == NULL) {
-	DPRINTF((DBG_PKT, "packet_sendto: write buffer full?\n"));
-	return(-ENOMEM);
-  }
-  /* Fill it in */
-  skb->mem_addr = skb;
-  skb->mem_len = len + sizeof(*skb);
-  skb->sk = sk;
-  skb->free = 1;
-  memcpy_fromfs(skb->data, from, len);
-  skb->len = len;
-  skb->next = NULL;
-  skb->arp = 1;
-  if (dev->flags & IFF_UP) dev->queue_xmit(skb, dev, sk->priority);
-    else kfree_skb(skb, FREE_WRITE);
-  return(len);
+	/* Now allocate the buffer, knowing 4K pagelimits wont break this line */
+	skb = sk->prot->wmalloc(sk, len + sizeof(*skb), 0, GFP_KERNEL);
+
+	/* This shouldn't happen, but it could. */
+	if (skb == NULL)
+	{
+		DPRINTF((DBG_PKT, "packet_sendto: write buffer full?\n"));
+		return (-ENOMEM);
+	}
+	/* Fill it in */
+	skb->mem_addr = skb;
+	skb->mem_len = len + sizeof(*skb);
+	skb->sk = sk;
+	skb->free = 1;
+	memcpy_fromfs(skb->data, from, len);
+	skb->len = len;
+	skb->next = NULL;
+	skb->arp = 1;
+	if (dev->flags & IFF_UP)
+		dev->queue_xmit(skb, dev, sk->priority);
+	else
+		kfree_skb(skb, FREE_WRITE);
+	return (len);
 }
-
 
 static int
-packet_write(struct sock *sk, unsigned char *buff, 
-	     int len, int noblock,  unsigned flags)
+packet_write(struct sock *sk, unsigned char *buff,
+			 int len, int noblock, unsigned flags)
 {
-  return(packet_sendto(sk, buff, len, noblock, flags, NULL, 0));
+	return (packet_sendto(sk, buff, len, noblock, flags, NULL, 0));
 }
 
-/* packetÌ×½Ó×ÖµÄ¹Ø±Õº¯Êý */
+/* packetå¥—æŽ¥å­—çš„å…³é—­å‡½æ•° */
 static void
 packet_close(struct sock *sk, int timeout)
 {
-  sk->inuse = 1;
-  sk->state = TCP_CLOSE;
-  dev_remove_pack((struct packet_type *)sk->pair);
-  kfree_s((void *)sk->pair, sizeof(struct packet_type));
-  sk->pair = NULL;
-  release_sock(sk);
+	sk->inuse = 1;
+	sk->state = TCP_CLOSE;
+	dev_remove_pack((struct packet_type *)sk->pair);
+	kfree_s((void *)sk->pair, sizeof(struct packet_type));
+	sk->pair = NULL;
+	release_sock(sk);
 }
 
-/* packetÐ­Òé³õÊ¼»¯ */
+/* packetåè®®åˆå§‹åŒ– */
 static int
 packet_init(struct sock *sk)
 {
-  struct packet_type *p;
+	struct packet_type *p;
 
-  /* ×¢ÒâRAWÌ×½Ó×Ö´´½¨µÄÔòÊÇÍøÂç²ãµ½´«Êä²ãµÄstruct inet_protocol£¬
-    * ¶øpacketÀàÐÍÐ­Òé£¬ÔòÐÂ½¨µÄÊÇÁ´Â·²ãµ½ÍøÂç²ãµÄstruct packet_type½á¹¹ 
+	/* æ³¨æ„RAWå¥—æŽ¥å­—åˆ›å»ºçš„åˆ™æ˜¯ç½‘ç»œå±‚åˆ°ä¼ è¾“å±‚çš„struct inet_protocolï¼Œ
+    * è€Œpacketç±»åž‹åè®®ï¼Œåˆ™æ–°å»ºçš„æ˜¯é“¾è·¯å±‚åˆ°ç½‘ç»œå±‚çš„struct packet_typeç»“æž„ 
     */
-  p = (struct packet_type *) kmalloc(sizeof(*p), GFP_KERNEL);
-  if (p == NULL) return(-ENOMEM);
+	p = (struct packet_type *)kmalloc(sizeof(*p), GFP_KERNEL);
+	if (p == NULL)
+		return (-ENOMEM);
 
-  p->func = packet_rcv;
-  p->type = sk->num;
-  p->data = (void *)sk;
-  dev_add_pack(p);
-   
-  /* We need to remember this somewhere. */
-  sk->pair = (struct sock *)p;
+	p->func = packet_rcv;
+	p->type = sk->num;
+	p->data = (void *)sk;
+	dev_add_pack(p);
 
-  return(0);
+	/* We need to remember this somewhere. */
+	sk->pair = (struct sock *)p;
+
+	return (0);
 }
-
 
 /*
  * This should be easy, if there is something there
  * we return it, otherwise we block.
  */
-int
-packet_recvfrom(struct sock *sk, unsigned char *to, int len,
-	        int noblock, unsigned flags, struct sockaddr_in *sin,
-	        int *addr_len)
+int packet_recvfrom(struct sock *sk, unsigned char *to, int len,
+					int noblock, unsigned flags, struct sockaddr_in *sin,
+					int *addr_len)
 {
-  int copied=0;
-  struct sk_buff *skb;
-  struct sockaddr *saddr;
-  int err;
+	int copied = 0;
+	struct sk_buff *skb;
+	struct sockaddr *saddr;
+	int err;
 
-  saddr = (struct sockaddr *)sin;
-  if (len == 0) return(0);
-  if (len < 0) return(-EINVAL);
+	saddr = (struct sockaddr *)sin;
+	if (len == 0)
+		return (0);
+	if (len < 0)
+		return (-EINVAL);
 
-  if (sk->shutdown & RCV_SHUTDOWN) return(0);
-  if (addr_len) {
-	  err=verify_area(VERIFY_WRITE, addr_len, sizeof(*addr_len));
-	  if(err)
-	  	return err;
-	  put_fs_long(sizeof(*saddr), addr_len);
-  }
-  
-  err=verify_area(VERIFY_WRITE,to,len);
-  if(err)
-  	return err;
-  skb=skb_recv_datagram(sk,flags,noblock,&err);
-  if(skb==NULL)
-  	return err;
-  copied = min(len, skb->len);
+	if (sk->shutdown & RCV_SHUTDOWN)
+		return (0);
+	if (addr_len)
+	{
+		err = verify_area(VERIFY_WRITE, addr_len, sizeof(*addr_len));
+		if (err)
+			return err;
+		put_fs_long(sizeof(*saddr), addr_len);
+	}
 
-  memcpy_tofs(to, skb->data, copied);	/* Don't use skb_copy_datagram here: We can't get frag chains */
+	err = verify_area(VERIFY_WRITE, to, len);
+	if (err)
+		return err;
+	skb = skb_recv_datagram(sk, flags, noblock, &err);
+	if (skb == NULL)
+		return err;
+	copied = min(len, skb->len);
 
-  /* Copy the address. */
-  if (saddr) {
-	struct sockaddr addr;
+	memcpy_tofs(to, skb->data, copied); /* Don't use skb_copy_datagram here: We can't get frag chains */
 
-	addr.sa_family = skb->dev->type;
-	memcpy(addr.sa_data,skb->dev->name, 14);
-	verify_area(VERIFY_WRITE, saddr, sizeof(*saddr));
-	memcpy_tofs(saddr, &addr, sizeof(*saddr));
-  }
+	/* Copy the address. */
+	if (saddr)
+	{
+		struct sockaddr addr;
 
-  skb_free_datagram(skb);		/* Its either been used up, or its a peek_copy anyway */
+		addr.sa_family = skb->dev->type;
+		memcpy(addr.sa_data, skb->dev->name, 14);
+		verify_area(VERIFY_WRITE, saddr, sizeof(*saddr));
+		memcpy_tofs(saddr, &addr, sizeof(*saddr));
+	}
 
-  release_sock(sk);
-  return(copied);
+	skb_free_datagram(skb); /* Its either been used up, or its a peek_copy anyway */
+
+	release_sock(sk);
+	return (copied);
 }
 
-
-int
-packet_read(struct sock *sk, unsigned char *buff,
-	    int len, int noblock, unsigned flags)
+int packet_read(struct sock *sk, unsigned char *buff,
+				int len, int noblock, unsigned flags)
 {
-  return(packet_recvfrom(sk, buff, len, noblock, flags, NULL, NULL));
+	return (packet_recvfrom(sk, buff, len, noblock, flags, NULL, NULL));
 }
-
 
 struct proto packet_prot = {
-  sock_wmalloc,
-  sock_rmalloc,
-  sock_wfree,
-  sock_rfree,
-  sock_rspace,
-  sock_wspace,
-  packet_close,
-  packet_read,
-  packet_write,
-  packet_sendto,
-  packet_recvfrom,
-  ip_build_header,
-  udp_connect,
-  NULL,
-  ip_queue_xmit,
-  ip_retransmit,
-  NULL,
-  NULL,
-  NULL, 
-  datagram_select,
-  NULL,
-  packet_init,
-  NULL,
-  NULL,	/* No set/get socket options */
-  NULL,
-  128,
-  0,
-  {NULL,},
-  "PACKET"
+	sock_wmalloc,
+	sock_rmalloc,
+	sock_wfree,
+	sock_rfree,
+	sock_rspace,
+	sock_wspace,
+	packet_close,
+	packet_read,
+	packet_write,
+	packet_sendto,
+	packet_recvfrom,
+	ip_build_header,
+	udp_connect,
+	NULL,
+	ip_queue_xmit,
+	ip_retransmit,
+	NULL,
+	NULL,
+	NULL,
+	datagram_select,
+	NULL,
+	packet_init,
+	NULL,
+	NULL, /* No set/get socket options */
+	NULL,
+	128,
+	0,
+	{
+		NULL,
+	},
+	"PACKET"
 };

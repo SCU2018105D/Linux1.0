@@ -49,43 +49,39 @@
 #include "sock.h"
 #include "arp.h"
 
-
-/* ½«struct sockÖÐµÄÊ±ÖÓÉ¾³ý£¬Í¬Ê±½«sockµÄtimeroutÖÃÎª0 */
-void
-delete_timer (struct sock *t)
+/* å°†struct sockä¸­çš„æ—¶é’Ÿåˆ é™¤ï¼ŒåŒæ—¶å°†sockçš„timeroutç½®ä¸º0 */
+void delete_timer(struct sock *t)
 {
-  unsigned long flags;
+	unsigned long flags;
 
-  save_flags (flags);
-  cli();
+	save_flags(flags);
+	cli();
 
-  t->timeout = 0;
-  del_timer (&t->timer);
+	t->timeout = 0;
+	del_timer(&t->timer);
 
-  restore_flags (flags);
+	restore_flags(flags);
 }
 
-/* ÖØÖÃstruct sockµÄtimer£¬Í¬Ê±½«sockµÄtimeroutÖÃÎªtimeout
- * ¾ßÌå²Ù×÷¹ý³ÌÊÇÏÈÉ¾³ýºóÌí¼Ó£¬
- * len±íÊ¾timerµÄ´¥·¢Ê±¼ä
+/* é‡ç½®struct sockçš„timerï¼ŒåŒæ—¶å°†sockçš„timeroutç½®ä¸ºtimeout
+ * å…·ä½“æ“ä½œè¿‡ç¨‹æ˜¯å…ˆåˆ é™¤åŽæ·»åŠ ï¼Œ
+ * lenè¡¨ç¤ºtimerçš„è§¦å‘æ—¶é—´
  */
-void
-reset_timer (struct sock *t, int timeout, unsigned long len)
+void reset_timer(struct sock *t, int timeout, unsigned long len)
 {
-  delete_timer (t);
+	delete_timer(t);
 
-  if (timeout != -1)
-    t->timeout = timeout;
+	if (timeout != -1)
+		t->timeout = timeout;
 
 #if 1
-  /* FIXME: ??? */
-  if ((int) len < 0)	/* prevent close to infinite timers. THEY _DO_ */
-	len = 3;	/* happen (negative values ?) - don't ask me why ! -FB */
+	/* FIXME: ??? */
+	if ((int)len < 0) /* prevent close to infinite timers. THEY _DO_ */
+		len = 3;	  /* happen (negative values ?) - don't ask me why ! -FB */
 #endif
-  t->timer.expires = len;
-  add_timer (&t->timer);
+	t->timer.expires = len;
+	add_timer(&t->timer);
 }
-
 
 /*
  * Now we will only be called whenever we need to do
@@ -93,164 +89,176 @@ reset_timer (struct sock *t, int timeout, unsigned long len)
  * sockets that need it.
  */
 
-/* Ã¿¸östruct sockµÄÊ±ÖÓº¯Êý */
-void
-net_timer (unsigned long data)
+/* æ¯ä¸ªstruct sockçš„æ—¶é’Ÿå‡½æ•° */
+void net_timer(unsigned long data)
 {
-  struct sock *sk = (struct sock*)data;
-  /* Ïàµ±ÓÚ»ñÈ¡Ê±ÖÓµÄÀàÐÍ°É£¬ */
-  int why = sk->timeout;
-  /* timeout is overwritten by 'delete_timer' and 'reset_timer' */
+	struct sock *sk = (struct sock *)data;
+	/* ç›¸å½“äºŽèŽ·å–æ—¶é’Ÿçš„ç±»åž‹å§ï¼Œ */
+	int why = sk->timeout;
+	/* timeout is overwritten by 'delete_timer' and 'reset_timer' */
 
-  /* ÅÐ¶ÏsockÊÇ·ñÒÑ±»ÆäËû½ø³ÌÊ¹ÓÃ£¬»òÕßµ±Ç°ÊÇ·ñÕýÔÚÖ´ÐÐÍøÂçµÄÏÂ°ë²¿·Ö£¬
-    * Èç¹ûµ±Ç°ÕýÔÚÖ´ÐÐÍøÂçµÄÏÂ°ë²¿·Ö£¬ÔòÖØÐÂÉèÖÃsockµÄtimer£¬Í¬Ê±Ìí¼Óµ½
-    * ÄÚºËÊ±ÖÓµ±ÖÐ£¬µÈ´ýÏÂ´ÎÖ´ÐÐ 
+	/* åˆ¤æ–­sockæ˜¯å¦å·²è¢«å…¶ä»–è¿›ç¨‹ä½¿ç”¨ï¼Œæˆ–è€…å½“å‰æ˜¯å¦æ­£åœ¨æ‰§è¡Œç½‘ç»œçš„ä¸‹åŠéƒ¨åˆ†ï¼Œ
+    * å¦‚æžœå½“å‰æ­£åœ¨æ‰§è¡Œç½‘ç»œçš„ä¸‹åŠéƒ¨åˆ†ï¼Œåˆ™é‡æ–°è®¾ç½®sockçš„timerï¼ŒåŒæ—¶æ·»åŠ åˆ°
+    * å†…æ ¸æ—¶é’Ÿå½“ä¸­ï¼Œç­‰å¾…ä¸‹æ¬¡æ‰§è¡Œ 
     */
-  if (sk->inuse || in_inet_bh()) {
-    sk->timer.expires = 10;
-    add_timer(&sk->timer);
-    return;
-  }
-
-  /* ÉèÖÃsockÎªÓÃ */
-  sk->inuse = 1;
-
-  DPRINTF ((DBG_TMR, "net_timer: found sk=%X why = %d\n", sk, why));
-  if (sk->wfront && 
-      before(sk->window_seq, sk->wfront->h.seq) &&
-      sk->send_head == NULL &&
-      sk->ack_backlog == 0 &&
-      sk->state != TCP_TIME_WAIT)
-    reset_timer(sk, TIME_PROBE0, sk->rto);
-  else if (sk->keepopen)
-    reset_timer (sk, TIME_KEEPOPEN, TCP_TIMEOUT_LEN);
-
-  /* Always see if we need to send an ack. */
-  /* ¿´¿´»¹ÓÐÃ»ÓÐÊÕµ½µÄÊý¾Ý°üÃ»ÓÐÓ¦´ð */
-  if (sk->ack_backlog) {
-    /* sock·¢ËÍÈ·ÈÏÊý¾Ý°ü*/
-    sk->prot->read_wakeup (sk);
-    if (! sk->dead)
-      wake_up_interruptible (sk->sleep);
-  }
-
-  /* Now we need to figure out why the socket was on the timer. */
-  switch (why) {
-    case TIME_DONE:
-	if (! sk->dead || sk->state != TCP_CLOSE) {
-	  printk ("non dead socket in time_done\n");
-	  release_sock (sk);
-	  break;
+	if (sk->inuse || in_inet_bh())
+	{
+		sk->timer.expires = 10;
+		add_timer(&sk->timer);
+		return;
 	}
-	destroy_sock (sk);
-	break;
-    case TIME_DESTROY:
-	/* We've waited for a while for all the memory associated with
+
+	/* è®¾ç½®sockä¸ºç”¨ */
+	sk->inuse = 1;
+
+	DPRINTF((DBG_TMR, "net_timer: found sk=%X why = %d\n", sk, why));
+	if (sk->wfront &&
+		before(sk->window_seq, sk->wfront->h.seq) &&
+		sk->send_head == NULL &&
+		sk->ack_backlog == 0 &&
+		sk->state != TCP_TIME_WAIT)
+		reset_timer(sk, TIME_PROBE0, sk->rto);
+	else if (sk->keepopen)
+		reset_timer(sk, TIME_KEEPOPEN, TCP_TIMEOUT_LEN);
+
+	/* Always see if we need to send an ack. */
+	/* çœ‹çœ‹è¿˜æœ‰æ²¡æœ‰æ”¶åˆ°çš„æ•°æ®åŒ…æ²¡æœ‰åº”ç­” */
+	if (sk->ack_backlog)
+	{
+		/* sockå‘é€ç¡®è®¤æ•°æ®åŒ…*/
+		sk->prot->read_wakeup(sk);
+		if (!sk->dead)
+			wake_up_interruptible(sk->sleep);
+	}
+
+	/* Now we need to figure out why the socket was on the timer. */
+	switch (why)
+	{
+	case TIME_DONE:
+		if (!sk->dead || sk->state != TCP_CLOSE)
+		{
+			printk("non dead socket in time_done\n");
+			release_sock(sk);
+			break;
+		}
+		destroy_sock(sk);
+		break;
+	case TIME_DESTROY:
+		/* We've waited for a while for all the memory associated with
 	 * the socket to be freed.  We need to print an error message.
 	 */
-	/* Èç¹ûsockµÄ·¢ËÍ»º³åÇøºÍ½ÓÊÕ»º³åÇø¶¼Îª¿Õ£¬ÔòÖ±½ÓÔÚºóÃæµÄÓï¾äµ±ÖÐÊÍ·Å */
-	if(sk->wmem_alloc!=0 || sk->rmem_alloc!=0)
-	{
-		DPRINTF ((DBG_TMR, "possible memory leak.  sk = %X\n", sk));
-		sk->wmem_alloc++;	/* So it DOESNT go away */
-		destroy_sock (sk);
-		sk->wmem_alloc--;	/* Might now have hit 0 - fall through and do it again if so */
-		sk->inuse = 0;	/* This will be ok, the destroy won't totally work */
-	}
-	if(sk->wmem_alloc==0 && sk->rmem_alloc==0)
-		destroy_sock(sk);	/* Socket gone, DONT update sk->inuse! */
-	break;
-    case TIME_CLOSE:
-	/* We've waited long enough, close the socket. */
-	sk->state = TCP_CLOSE;
-	delete_timer (sk);
-	/* Kill the ARP entry in case the hardware has changed. */
-	arp_destroy_maybe (sk->daddr);
-	if (!sk->dead)
-	  wake_up_interruptible (sk->sleep);
-	sk->shutdown = SHUTDOWN_MASK;
-	reset_timer (sk, TIME_DESTROY, TCP_DONE_TIME);
-	release_sock (sk);
-	break;
-    case TIME_PROBE0:   /* ´°¿ÚÌ½²â¶¨Ê±Æ÷£¬Ò²±»³ÆÎª¼á³Ö¶¨Ê±Æ÷ */
-	tcp_send_probe0(sk);
-	release_sock (sk);
-	break;
-    case TIME_WRITE:	/* ³¬Ê±ÖØ´«¶¨Ê±Æ÷ */   /* try to retransmit. */
-	/* It could be we got here because we needed to send an ack.
+		/* å¦‚æžœsockçš„å‘é€ç¼“å†²åŒºå’ŒæŽ¥æ”¶ç¼“å†²åŒºéƒ½ä¸ºç©ºï¼Œåˆ™ç›´æŽ¥åœ¨åŽé¢çš„è¯­å¥å½“ä¸­é‡Šæ”¾ */
+		if (sk->wmem_alloc != 0 || sk->rmem_alloc != 0)
+		{
+			DPRINTF((DBG_TMR, "possible memory leak.  sk = %X\n", sk));
+			sk->wmem_alloc++; /* So it DOESNT go away */
+			destroy_sock(sk);
+			sk->wmem_alloc--; /* Might now have hit 0 - fall through and do it again if so */
+			sk->inuse = 0;	  /* This will be ok, the destroy won't totally work */
+		}
+		if (sk->wmem_alloc == 0 && sk->rmem_alloc == 0)
+			destroy_sock(sk); /* Socket gone, DONT update sk->inuse! */
+		break;
+	case TIME_CLOSE:
+		/* We've waited long enough, close the socket. */
+		sk->state = TCP_CLOSE;
+		delete_timer(sk);
+		/* Kill the ARP entry in case the hardware has changed. */
+		arp_destroy_maybe(sk->daddr);
+		if (!sk->dead)
+			wake_up_interruptible(sk->sleep);
+		sk->shutdown = SHUTDOWN_MASK;
+		reset_timer(sk, TIME_DESTROY, TCP_DONE_TIME);
+		release_sock(sk);
+		break;
+	case TIME_PROBE0: /* çª—å£æŽ¢æµ‹å®šæ—¶å™¨ï¼Œä¹Ÿè¢«ç§°ä¸ºåšæŒå®šæ—¶å™¨ */
+		tcp_send_probe0(sk);
+		release_sock(sk);
+		break;
+	case TIME_WRITE: /* è¶…æ—¶é‡ä¼ å®šæ—¶å™¨ */ /* try to retransmit. */
+		/* It could be we got here because we needed to send an ack.
 	 * So we need to check for that.
 	 */
-	if (sk->send_head) {
-	  if (jiffies < (sk->send_head->when + sk->rto)) {
-	    reset_timer (sk, TIME_WRITE, 
-			 (sk->send_head->when + sk->rto - jiffies));
-	    release_sock (sk);
-	    break;
-	  }
-	  /* printk("timer: seq %d retrans %d out %d cong %d\n", sk->send_head->h.seq,
+		if (sk->send_head)
+		{
+			if (jiffies < (sk->send_head->when + sk->rto))
+			{
+				reset_timer(sk, TIME_WRITE,
+							(sk->send_head->when + sk->rto - jiffies));
+				release_sock(sk);
+				break;
+			}
+			/* printk("timer: seq %d retrans %d out %d cong %d\n", sk->send_head->h.seq,
 	     sk->retransmits, sk->packets_out, sk->cong_window); */
-	  DPRINTF ((DBG_TMR, "retransmitting.\n"));
-          /* µ÷ÓÃtcpÐ­ÒéµÄ³¬Ê±ÖØ´«º¯Êý */
-	  sk->prot->retransmit (sk, 0);
-	  if ((sk->state == TCP_ESTABLISHED && sk->retransmits && !(sk->retransmits & 7))
-	    || (sk->state != TCP_ESTABLISHED && sk->retransmits > TCP_RETR1)) {
-	    DPRINTF ((DBG_TMR, "timer.c TIME_WRITE time-out 1\n"));
-	    arp_destroy_maybe (sk->daddr);
-	    ip_route_check (sk->daddr);
-	  }
-	  if (sk->state != TCP_ESTABLISHED && sk->retransmits > TCP_RETR2) {
-	    DPRINTF ((DBG_TMR, "timer.c TIME_WRITE time-out 2\n"));
-	    sk->err = ETIMEDOUT;
-	    if (sk->state == TCP_FIN_WAIT1 || sk->state == TCP_FIN_WAIT2
-	      || sk->state == TCP_LAST_ACK) {
-	      sk->state = TCP_TIME_WAIT;
-	      reset_timer (sk, TIME_CLOSE, TCP_TIMEWAIT_LEN);
-	    } else {
-	      sk->prot->close (sk, 1);
-	      break;
-	    }
-	  }
-	}
-	release_sock (sk);
-	break;
-    case TIME_KEEPOPEN:          /* ±£»î¶¨Ê±Æ÷ */
-	/* Send something to keep the connection open. */
-	if (sk->prot->write_wakeup)
-	  sk->prot->write_wakeup (sk);
-	sk->retransmits++;  /* ÒòÎªÊÇÖØ·¢¶¨Ê±£¬ËùÒÔ»áÔö¼Ó³¬Ê±ÖØ·¢´ÎÊý */
-	if (sk->shutdown == SHUTDOWN_MASK) {
-	  sk->prot->close (sk, 1);
-	  sk->state = TCP_CLOSE;
-	}
+			DPRINTF((DBG_TMR, "retransmitting.\n"));
+			/* è°ƒç”¨tcpåè®®çš„è¶…æ—¶é‡ä¼ å‡½æ•° */
+			sk->prot->retransmit(sk, 0);
+			if ((sk->state == TCP_ESTABLISHED && sk->retransmits && !(sk->retransmits & 7)) || (sk->state != TCP_ESTABLISHED && sk->retransmits > TCP_RETR1))
+			{
+				DPRINTF((DBG_TMR, "timer.c TIME_WRITE time-out 1\n"));
+				arp_destroy_maybe(sk->daddr);
+				ip_route_check(sk->daddr);
+			}
+			if (sk->state != TCP_ESTABLISHED && sk->retransmits > TCP_RETR2)
+			{
+				DPRINTF((DBG_TMR, "timer.c TIME_WRITE time-out 2\n"));
+				sk->err = ETIMEDOUT;
+				if (sk->state == TCP_FIN_WAIT1 || sk->state == TCP_FIN_WAIT2 || sk->state == TCP_LAST_ACK)
+				{
+					sk->state = TCP_TIME_WAIT;
+					reset_timer(sk, TIME_CLOSE, TCP_TIMEWAIT_LEN);
+				}
+				else
+				{
+					sk->prot->close(sk, 1);
+					break;
+				}
+			}
+		}
+		release_sock(sk);
+		break;
+	case TIME_KEEPOPEN: /* ä¿æ´»å®šæ—¶å™¨ */
+		/* Send something to keep the connection open. */
+		if (sk->prot->write_wakeup)
+			sk->prot->write_wakeup(sk);
+		sk->retransmits++; /* å› ä¸ºæ˜¯é‡å‘å®šæ—¶ï¼Œæ‰€ä»¥ä¼šå¢žåŠ è¶…æ—¶é‡å‘æ¬¡æ•° */
+		if (sk->shutdown == SHUTDOWN_MASK)
+		{
+			sk->prot->close(sk, 1);
+			sk->state = TCP_CLOSE;
+		}
 
-	if ((sk->state == TCP_ESTABLISHED && sk->retransmits && !(sk->retransmits & 7))
-	  || (sk->state != TCP_ESTABLISHED && sk->retransmits > TCP_RETR1)) {
-	  DPRINTF ((DBG_TMR, "timer.c TIME_KEEPOPEN time-out 1\n"));
-	  arp_destroy_maybe (sk->daddr);
-	  ip_route_check (sk->daddr);
-	  release_sock (sk);
-	  break;
+		if ((sk->state == TCP_ESTABLISHED && sk->retransmits && !(sk->retransmits & 7)) || (sk->state != TCP_ESTABLISHED && sk->retransmits > TCP_RETR1))
+		{
+			DPRINTF((DBG_TMR, "timer.c TIME_KEEPOPEN time-out 1\n"));
+			arp_destroy_maybe(sk->daddr);
+			ip_route_check(sk->daddr);
+			release_sock(sk);
+			break;
+		}
+		if (sk->state != TCP_ESTABLISHED && sk->retransmits > TCP_RETR2)
+		{
+			DPRINTF((DBG_TMR, "timer.c TIME_KEEPOPEN time-out 2\n"));
+			arp_destroy_maybe(sk->daddr);
+			sk->err = ETIMEDOUT;
+			if (sk->state == TCP_FIN_WAIT1 || sk->state == TCP_FIN_WAIT2)
+			{
+				sk->state = TCP_TIME_WAIT;
+				if (!sk->dead)
+					wake_up_interruptible(sk->sleep);
+				release_sock(sk);
+			}
+			else
+			{
+				sk->prot->close(sk, 1);
+			}
+			break;
+		}
+		release_sock(sk);
+		break;
+	default:
+		printk("net timer expired - reason unknown, sk=%08X\n", (int)sk);
+		release_sock(sk);
+		break;
 	}
-	if (sk->state != TCP_ESTABLISHED && sk->retransmits > TCP_RETR2) {
-	  DPRINTF ((DBG_TMR, "timer.c TIME_KEEPOPEN time-out 2\n"));
-	  arp_destroy_maybe (sk->daddr);
-	  sk->err = ETIMEDOUT;
-	  if (sk->state == TCP_FIN_WAIT1 || sk->state == TCP_FIN_WAIT2) {
-	    sk->state = TCP_TIME_WAIT;
-	    if (!sk->dead)
-	      wake_up_interruptible (sk->sleep);
-	    release_sock (sk);
-	  } else {
-	    sk->prot->close (sk, 1);
-	  }
-	  break;
-	}
-	release_sock (sk);
-	break;
-    default:
-	printk ("net timer expired - reason unknown, sk=%08X\n", (int)sk);
-	release_sock (sk);
-	break;
-  }
 }
-

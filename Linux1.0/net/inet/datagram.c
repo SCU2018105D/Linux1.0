@@ -37,7 +37,6 @@
 #include "skbuff.h"
 #include "sock.h"
 
-
 /*
  *	Get a datagram skbuff, understands the peeking, nonblocking wakeups and possible
  *	races. This replaces identical code in packet,raw and udp, as well as the yet to
@@ -46,13 +45,13 @@
  *	re-entrant.
  */
 
-/* ²é¿´Ì×½Ó×Ö½ÓÊÜ¶ÓÁĞÖĞÊÇ·ñÓĞÊı¾İ°ü£¬Èç¹ûÓĞ£¬ÔòÖ±½Ó·µ»Ø¸ÃÊı¾İ°ü£¬
- * ·ñÔòË¯ÃßµÈ´ı£¬ÔÚË¯ÃßÖ®Ç°ĞèÒª¼ì²éµÈ´ıµÄ±ØÒªĞÔ£¬ÕâĞ©¼ì²é°üÀ¨
- * 1¡¢Ì×½Ó×ÖÊÇ·ñÒÑ¾­±»¹Ø±Õ½ÓÊÕÍ¨µÀ£¬¶ÔÓÚÕâÖÖÇé¿öÃ¤Ä¿µÈ´ıÊÇ²»¿ÉÈ¡
- *    ´ËÊ±µ÷ÓÃrelease_sockº¯Êı´Ó¿ÉÄÜµÄÆäËû»º´æ¶ÓÁĞÖĞ×ªÒÆÊı¾İ°ü(Êµ¼ÊÉÏ
-      µ÷ÓÃrelease_sockº¯Êı¶ÔÊ¹ÓÃudpĞ­ÒéµÄÌ×½Ó×Ö½ÓÊÕ¶ÓÁĞ²»»áÔì³ÉÈÎºÎÓ°Ïì
-      ÒòÎªUDPĞ­Òé¸ù±¾Ã»ÓĞÊ¹ÓÃback_logÔİ´æ¶ÓÁĞ£¬²¢Ö±½Ó·µ»ØNULL
- * 2¡¢Ì×½Ó×ÖÔÚ´¦ÀíµÄ¹ı³Ìµ±ÖĞÊÇ·ñ·¢ËÍ´íÎó
+/* æŸ¥çœ‹å¥—æ¥å­—æ¥å—é˜Ÿåˆ—ä¸­æ˜¯å¦æœ‰æ•°æ®åŒ…ï¼Œå¦‚æœæœ‰ï¼Œåˆ™ç›´æ¥è¿”å›è¯¥æ•°æ®åŒ…ï¼Œ
+ * å¦åˆ™ç¡çœ ç­‰å¾…ï¼Œåœ¨ç¡çœ ä¹‹å‰éœ€è¦æ£€æŸ¥ç­‰å¾…çš„å¿…è¦æ€§ï¼Œè¿™äº›æ£€æŸ¥åŒ…æ‹¬
+ * 1ã€å¥—æ¥å­—æ˜¯å¦å·²ç»è¢«å…³é—­æ¥æ”¶é€šé“ï¼Œå¯¹äºè¿™ç§æƒ…å†µç›²ç›®ç­‰å¾…æ˜¯ä¸å¯å–
+ *    æ­¤æ—¶è°ƒç”¨release_sockå‡½æ•°ä»å¯èƒ½çš„å…¶ä»–ç¼“å­˜é˜Ÿåˆ—ä¸­è½¬ç§»æ•°æ®åŒ…(å®é™…ä¸Š
+      è°ƒç”¨release_sockå‡½æ•°å¯¹ä½¿ç”¨udpåè®®çš„å¥—æ¥å­—æ¥æ”¶é˜Ÿåˆ—ä¸ä¼šé€ æˆä»»ä½•å½±å“
+      å› ä¸ºUDPåè®®æ ¹æœ¬æ²¡æœ‰ä½¿ç”¨back_logæš‚å­˜é˜Ÿåˆ—ï¼Œå¹¶ç›´æ¥è¿”å›NULL
+ * 2ã€å¥—æ¥å­—åœ¨å¤„ç†çš„è¿‡ç¨‹å½“ä¸­æ˜¯å¦å‘é€é”™è¯¯
  */
 struct sk_buff *skb_recv_datagram(struct sock *sk, unsigned flags, int noblock, int *err)
 {
@@ -61,29 +60,29 @@ struct sk_buff *skb_recv_datagram(struct sock *sk, unsigned flags, int noblock, 
 	/* Socket is inuse - so the timer doesn't attack it */
 restart:
 	sk->inuse = 1;
-	while(sk->rqueue == NULL)	/* No data */
+	while (sk->rqueue == NULL) /* No data */
 	{
 		/* If we are shutdown then no more data is going to appear. We are done */
 		if (sk->shutdown & RCV_SHUTDOWN)
 		{
 			release_sock(sk);
-			*err=0;
+			*err = 0;
 			return NULL;
 		}
 
-		if(sk->err)
+		if (sk->err)
 		{
 			release_sock(sk);
-			*err=-sk->err;
-			sk->err=0;
+			*err = -sk->err;
+			sk->err = 0;
 			return NULL;
 		}
 
 		/* Sequenced packets can come disconnected. If so we report the problem */
-		if(sk->type==SOCK_SEQPACKET && sk->state!=TCP_ESTABLISHED)
+		if (sk->type == SOCK_SEQPACKET && sk->state != TCP_ESTABLISHED)
 		{
 			release_sock(sk);
-			*err=-ENOTCONN;
+			*err = -ENOTCONN;
 			return NULL;
 		}
 
@@ -91,7 +90,7 @@ restart:
 		if (noblock)
 		{
 			release_sock(sk);
-			*err=-EAGAIN;
+			*err = -EAGAIN;
 			return NULL;
 		}
 		release_sock(sk);
@@ -99,8 +98,8 @@ restart:
 		/* Interrupts off so that no packet arrives before we begin sleeping.
 		   Otherwise we might miss our wake up */
 		cli();
-                /* Èç¹û´ËÊ±£¬Êı¾İ¶ÁÈ¡¶ÓÁĞÈÔÈ»ÎªNULL£¬²¢ÇÒÒ²²»×èÈû£¬
-                  * Ôòµ±Ç°½ø³Ì¿ÉÖĞ¶ÏµÄË¯Ãß
+		/* å¦‚æœæ­¤æ—¶ï¼Œæ•°æ®è¯»å–é˜Ÿåˆ—ä»ç„¶ä¸ºNULLï¼Œå¹¶ä¸”ä¹Ÿä¸é˜»å¡ï¼Œ
+                  * åˆ™å½“å‰è¿›ç¨‹å¯ä¸­æ–­çš„ç¡çœ 
                   */
 		if (sk->rqueue == NULL)
 		{
@@ -109,57 +108,56 @@ restart:
 			if (current->signal & ~current->blocked)
 			{
 				sti();
-				*err=-ERESTARTSYS;
-				return(NULL);
+				*err = -ERESTARTSYS;
+				return (NULL);
 			}
-			if(sk->err != 0)	/* Error while waiting for packet
+			if (sk->err != 0) /* Error while waiting for packet
 						   eg an icmp sent earlier by the
 						   peer has finaly turned up now */
 			{
 				*err = -sk->err;
 				sti();
-				sk->err=0;
+				sk->err = 0;
 				return NULL;
 			}
 		}
 		sk->inuse = 1;
 		sti();
-	  }
-	  /* Again only user level code calls this function, so nothing interrupt level
+	}
+	/* Again only user level code calls this function, so nothing interrupt level
 	     will suddenely eat the rqueue */
-          /* ÔËĞĞµ½ÕâÀïÔò´ú±ístruct sockµÄ¶ÁÈ¡¶ÓÁĞÖĞÓĞÊı¾İ°ü¿É¶ÁÈ¡£¬
-            * Èç¹û²»ÊÇÔ¤¶ÁÈ¡£¬Ôò´Ó¶ÁÈ¡¶ÓÁĞÖĞÒÆ³ıÒ»¸öskb£¬·ñÔò²»ÒÆ³ı£¬ 
-            * ½ö½öÊÇ¶ÁÈ¡ÁËÀïÃæµÄÊı¾İ£¬ÀıÈçĞèÒª¶ÁÈ¡Ç°Ãæ¼¸¸ö×Ö½ÚĞèÒªÖªµÀÊı¾İ°üĞÅÏ¢µÄ 
-            * Çé¿öÏÂ  
+	/* è¿è¡Œåˆ°è¿™é‡Œåˆ™ä»£è¡¨struct sockçš„è¯»å–é˜Ÿåˆ—ä¸­æœ‰æ•°æ®åŒ…å¯è¯»å–ï¼Œ
+            * å¦‚æœä¸æ˜¯é¢„è¯»å–ï¼Œåˆ™ä»è¯»å–é˜Ÿåˆ—ä¸­ç§»é™¤ä¸€ä¸ªskbï¼Œå¦åˆ™ä¸ç§»é™¤ï¼Œ 
+            * ä»…ä»…æ˜¯è¯»å–äº†é‡Œé¢çš„æ•°æ®ï¼Œä¾‹å¦‚éœ€è¦è¯»å–å‰é¢å‡ ä¸ªå­—èŠ‚éœ€è¦çŸ¥é“æ•°æ®åŒ…ä¿¡æ¯çš„ 
+            * æƒ…å†µä¸‹  
             */
-	  if (!(flags & MSG_PEEK))
-	  {
-	    /* ´Ó¶Á¶ÓÁĞÖĞ»ñÈ¡Ò»¸öskb */
-		skb=skb_dequeue(&sk->rqueue);
-		if(skb!=NULL)
+	if (!(flags & MSG_PEEK))
+	{
+		/* ä»è¯»é˜Ÿåˆ—ä¸­è·å–ä¸€ä¸ªskb */
+		skb = skb_dequeue(&sk->rqueue);
+		if (skb != NULL)
 			skb->users++;
 		else
-			goto restart;	/* Avoid race if someone beats us to the data */
-	  }
-	  else
-	  {
+			goto restart; /* Avoid race if someone beats us to the data */
+	}
+	else
+	{
 		cli();
-		skb=skb_peek(&sk->rqueue);
-		if(skb!=NULL)
+		skb = skb_peek(&sk->rqueue);
+		if (skb != NULL)
 			skb->users++;
 		sti();
-		if(skb==NULL)	/* shouldn't happen but .. */
-			*err=-EAGAIN;
-	  }
-	  return skb;
+		if (skb == NULL) /* shouldn't happen but .. */
+			*err = -EAGAIN;
+	}
+	return skb;
 }
 
-
-/* skb_free_datagram º¯ÊıÊÍ·ÅÒ»¸öÊı¾İ°ü£¬166 ĞĞµİ¼õÓÃ»§¼ÆÊı£¬Ã¿¸öÊ¹ÓÃ¸ÃÊı¾İ°üµÄ½ø³Ì¶¼
- * »ØÔö¼Ó¸Ã sk_buff ½á¹¹µÄ users ×Ö¶Î£¬Ò»µ©¸Ã×Ö¶ÎÎª 0£¬±íÊ¾ÕâÊÇÒ»¸öÓÎÀëµÄÊı¾İ°ü£¬¿ÉÒÔ½ø
- * ĞĞÊÍ·Å£¬·ñÔò±íÊ¾»¹ÓĞ½ø³ÌÔÚÊ¹ÓÃ¸ÃÊı¾İ°ü£¬´ËÊ±²»¿É½øĞĞÊÍ·Å£¬Ö±½Ó·µ»Ø¡£148 ĞĞ¼ì²éÊı
- * ¾İ°üÊÇ·ñÈÔÈ»´¦ÓÚÏµÍ³Ä³¸ö¶ÓÁĞÖĞ£¬ Èç¹ûÊı¾İ°ü»¹±»¹Ò½ÓÔÚÏµÍ³¶ÓÁĞÖĞ£¬ Ò²²»¿É¶ÔÆä½øĞĞÊÍ
- * ·Å¡£·ñÔòµ÷ÓÃ kfree_skb º¯ÊıÊÍ·ÅÊı¾İ°üËùÕ¼ÓÃµÄÄÚ´æ¿Õ¼ä¡£
+/* skb_free_datagram å‡½æ•°é‡Šæ”¾ä¸€ä¸ªæ•°æ®åŒ…ï¼Œ166 è¡Œé€’å‡ç”¨æˆ·è®¡æ•°ï¼Œæ¯ä¸ªä½¿ç”¨è¯¥æ•°æ®åŒ…çš„è¿›ç¨‹éƒ½
+ * å›å¢åŠ è¯¥ sk_buff ç»“æ„çš„ users å­—æ®µï¼Œä¸€æ—¦è¯¥å­—æ®µä¸º 0ï¼Œè¡¨ç¤ºè¿™æ˜¯ä¸€ä¸ªæ¸¸ç¦»çš„æ•°æ®åŒ…ï¼Œå¯ä»¥è¿›
+ * è¡Œé‡Šæ”¾ï¼Œå¦åˆ™è¡¨ç¤ºè¿˜æœ‰è¿›ç¨‹åœ¨ä½¿ç”¨è¯¥æ•°æ®åŒ…ï¼Œæ­¤æ—¶ä¸å¯è¿›è¡Œé‡Šæ”¾ï¼Œç›´æ¥è¿”å›ã€‚148 è¡Œæ£€æŸ¥æ•°
+ * æ®åŒ…æ˜¯å¦ä»ç„¶å¤„äºç³»ç»ŸæŸä¸ªé˜Ÿåˆ—ä¸­ï¼Œ å¦‚æœæ•°æ®åŒ…è¿˜è¢«æŒ‚æ¥åœ¨ç³»ç»Ÿé˜Ÿåˆ—ä¸­ï¼Œ ä¹Ÿä¸å¯å¯¹å…¶è¿›è¡Œé‡Š
+ * æ”¾ã€‚å¦åˆ™è°ƒç”¨ kfree_skb å‡½æ•°é‡Šæ”¾æ•°æ®åŒ…æ‰€å ç”¨çš„å†…å­˜ç©ºé—´ã€‚
  */
 void skb_free_datagram(struct sk_buff *skb)
 {
@@ -168,23 +166,23 @@ void skb_free_datagram(struct sk_buff *skb)
 	save_flags(flags);
 	cli();
 	skb->users--;
-	if(skb->users>0)
+	if (skb->users > 0)
 	{
 		restore_flags(flags);
 		return;
 	}
 	/* See if it needs destroying */
-	if(skb->list == NULL)	/* Been dequeued by someone - ie its read */
-		kfree_skb(skb,FREE_READ);
+	if (skb->list == NULL) /* Been dequeued by someone - ie its read */
+		kfree_skb(skb, FREE_READ);
 	restore_flags(flags);
 }
 
-/* ½«ÄÚºË»º³åÇøÖĞÊı¾İ¸´ÖÆµ½ÓÃ»§»º³åÇøµ±ÖĞ */
+/* å°†å†…æ ¸ç¼“å†²åŒºä¸­æ•°æ®å¤åˆ¶åˆ°ç”¨æˆ·ç¼“å†²åŒºå½“ä¸­ */
 void skb_copy_datagram(struct sk_buff *skb, int offset, char *to, int size)
 {
 	/* We will know all about the fraglist options to allow >4K receives
 	   but not this release */
-	memcpy_tofs(to,skb->h.raw+offset,size);
+	memcpy_tofs(to, skb->h.raw + offset, size);
 }
 
 /*
@@ -192,40 +190,40 @@ void skb_copy_datagram(struct sk_buff *skb, int offset, char *to, int size)
  *	Now does seqpacket.
  */
 
-/* udpĞ­ÒéµÄselectÏµÍ³µ÷ÓÃ */
+/* udpåè®®çš„selectç³»ç»Ÿè°ƒç”¨ */
 int datagram_select(struct sock *sk, int sel_type, select_table *wait)
 {
 	select_wait(sk->sleep, wait);
-	switch(sel_type)
+	switch (sel_type)
 	{
-		case SEL_IN:
-			if (sk->type==SOCK_SEQPACKET && sk->state==TCP_CLOSE)
-			{
-				/* Connection closed: Wake up */
-				return(1);
-			}
-			if (sk->rqueue != NULL || sk->err != 0)
-			{	/* This appears to be consistent
+	case SEL_IN:
+		if (sk->type == SOCK_SEQPACKET && sk->state == TCP_CLOSE)
+		{
+			/* Connection closed: Wake up */
+			return (1);
+		}
+		if (sk->rqueue != NULL || sk->err != 0)
+		{ /* This appears to be consistent
 				   with other stacks */
-				return(1);
-			}
-			return(0);
+			return (1);
+		}
+		return (0);
 
-		case SEL_OUT:
-			if (sk->prot && sk->prot->wspace(sk) >= MIN_WRITE_SPACE)
-			{
-				return(1);
-			}
-			if (sk->prot==NULL && sk->sndbuf-sk->wmem_alloc >= MIN_WRITE_SPACE)
-			{
-				return(1);
-			}
-			return(0);
+	case SEL_OUT:
+		if (sk->prot && sk->prot->wspace(sk) >= MIN_WRITE_SPACE)
+		{
+			return (1);
+		}
+		if (sk->prot == NULL && sk->sndbuf - sk->wmem_alloc >= MIN_WRITE_SPACE)
+		{
+			return (1);
+		}
+		return (0);
 
-		case SEL_EX:
-			if (sk->err)
-				return(1); /* Socket has gone into error state (eg icmp error) */
-			return(0);
+	case SEL_EX:
+		if (sk->err)
+			return (1); /* Socket has gone into error state (eg icmp error) */
+		return (0);
 	}
-	return(0);
+	return (0);
 }
